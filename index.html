@@ -151,17 +151,24 @@ function spawnMonsters(){
   monster = [];
   const count = difficultySettings[difficulty].monsterCount;
   for(let i = 0; i < count; i++){
-    while(true){
+    let attempts = 0;
+    while(attempts < 100){
       const m = { 
         x: Math.floor(Math.random()*COLS), 
         y: Math.floor(Math.random()*ROWS) 
       };
+      const headPos = snake[0];
+      const distanceFromSnake = Math.abs(m.x - headPos.x) + Math.abs(m.y - headPos.y);
+      
+      // Make sure monster spawns away from snake and other monsters
       if (!snake.some(s => s.x===m.x && s.y===m.y) && 
           (food.x !== m.x || food.y !== m.y) &&
-          !monster.some(mon => mon.x===m.x && mon.y===m.y)) {
+          !monster.some(mon => mon.x===m.x && mon.y===m.y) &&
+          distanceFromSnake > 5) {
         monster.push(m);
         break;
       }
+      attempts++;
     }
   }
 }
@@ -264,22 +271,26 @@ function gameTick(){
     return;
   }
 
-  // Check collision with monster BEFORE they move
-  if (monster.some(m => m.x===head.x && m.y===head.y)) {
-    gameOver();
-    return;
+  // Check collision with ALL monsters BEFORE they move
+  for(let i = 0; i < monster.length; i++){
+    if(monster[i].x === head.x && monster[i].y === head.y){
+      gameOver();
+      return;
+    }
   }
 
-  // Move monsters AFTER checking collision
+  // Move monsters
   monsterMoveCounter++;
   if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
     moveMonsters();
     monsterMoveCounter = 0;
     
-    // Check collision again AFTER monsters move
-    if (monster.some(m => m.x===head.x && m.y===head.y)) {
-      gameOver();
-      return;
+    // Check collision with ALL monsters AFTER they move
+    for(let i = 0; i < monster.length; i++){
+      if(monster[i].x === head.x && monster[i].y === head.y){
+        gameOver();
+        return;
+      }
     }
   }
 

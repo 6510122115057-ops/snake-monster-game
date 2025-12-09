@@ -230,6 +230,19 @@ function gameTick(){
     return;
   }
 
+  // Move monsters BEFORE adding new head
+  monsterMoveCounter++;
+  if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
+    moveMonsters();
+    monsterMoveCounter = 0;
+  }
+
+  // Check collision with monster AFTER they move but BEFORE snake moves
+  if (monster.some(m => m.x===head.x && m.y===head.y)) {
+    gameOver();
+    return;
+  }
+
   snake.unshift(head);
 
   if (head.x === food.x && head.y === food.y){
@@ -259,13 +272,6 @@ function gameTick(){
     if(freezeDuration <= 0){
       monstersFrozen = false;
     }
-  }
-
-  // Move monsters at slower intervals
-  monsterMoveCounter++;
-  if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
-    moveMonsters();
-    monsterMoveCounter = 0;
   }
 
   draw();

@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="th">
 <head>
+<head>
+  
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game with Monster</title>
+  
 <meta charset="utf-8" />
 <title>Snake Game with Monster</title>
 <style>
@@ -78,20 +84,15 @@
     transform: translateY(0);
   }
 
-  /* ===== จอยสติ๊กบนมือถือ ===== */
-  .touch-controls {
-  position: fixed;
-  top: 90%;
-  left: 50%;
-  transform: translate(-50%, -50%);  /* ดึงกลับให้กึ่งกลางจริง */
+ /* มือถือ = เห็น (ค่าเริ่มต้น) */
+.touch-controls {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  z-index: 9999;
 }
 
-  /* ซ่อนจอยเมื่อเป็นจอใหญ่ (PC, Laptop) */
+/* จอใหญ่ (>= 700px) = ซ่อนจอย */
 @media (min-width: 700px) {
   .touch-controls {
     display: none;

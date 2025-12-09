@@ -236,23 +236,23 @@ function gameTick(){
     return;
   }
 
-  // Check collision with monster
+  // Check collision with monster BEFORE they move
   if (monster.some(m => m.x===head.x && m.y===head.y)) {
     gameOver();
     return;
   }
 
-  // Move monsters BEFORE adding new head
+  // Move monsters AFTER checking collision
   monsterMoveCounter++;
   if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
     moveMonsters();
     monsterMoveCounter = 0;
-  }
-
-  // Check collision with monster AFTER they move but BEFORE snake moves
-  if (monster.some(m => m.x===head.x && m.y===head.y)) {
-    gameOver();
-    return;
+    
+    // Check collision again AFTER monsters move
+    if (monster.some(m => m.x===head.x && m.y===head.y)) {
+      gameOver();
+      return;
+    }
   }
 
   snake.unshift(head);

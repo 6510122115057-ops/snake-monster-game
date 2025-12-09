@@ -5,6 +5,42 @@
 <title>Snake Game with Monster</title>
 <style>
 
+  /* Mobile Button Controls */
+.mobile-controls {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.middle-row {
+  display: flex;
+  gap: 10px;
+}
+
+.ctrl-btn {
+  width: 55px;
+  height: 55px;
+  font-size: 22px;
+  font-weight: bold;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+  color: white;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.ctrl-btn:active {
+  transform: scale(0.92);
+  background: rgba(255,255,255,0.3);
+}
+
+
 /* TOUCH CONTROLS */
 .touch-controls {
   position: fixed;
@@ -617,3 +653,4 @@ resetGame();
   
 </body>
 </html>
+

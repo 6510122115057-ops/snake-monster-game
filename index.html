@@ -327,8 +327,8 @@ function updateHardMonstersByScore() {
   if (difficulty !== "hard") return;
 
   let targetCount = 2;
-  if (score >= 800) targetCount = 4;
-  else if (score >= 400) targetCount = 3;
+  if (score >= 100) targetCount = 4;
+  else if (score >= 50) targetCount = 3;
 
   while (monster.length < targetCount) {
     let m;
@@ -658,3 +658,4 @@ resetGame();
 </script>
 </body>
 </html>
+

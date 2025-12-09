@@ -151,17 +151,24 @@ function spawnMonsters(){
   monster = [];
   const count = difficultySettings[difficulty].monsterCount;
   for(let i = 0; i < count; i++){
-    while(true){
+    let attempts = 0;
+    while(attempts < 100){
       const m = { 
         x: Math.floor(Math.random()*COLS), 
         y: Math.floor(Math.random()*ROWS) 
       };
+      const headPos = snake[0];
+      const distanceFromSnake = Math.abs(m.x - headPos.x) + Math.abs(m.y - headPos.y);
+      
+      // Make sure monster spawns away from snake and other monsters
       if (!snake.some(s => s.x===m.x && s.y===m.y) && 
           (food.x !== m.x || food.y !== m.y) &&
-          !monster.some(mon => mon.x===m.x && mon.y===m.y)) {
+          !monster.some(mon => mon.x===m.x && mon.y===m.y) &&
+          distanceFromSnake > 5) {
         monster.push(m);
         break;
       }
+      attempts++;
     }
   }
 }
@@ -192,17 +199,57 @@ function placeFreezeItem(){
 function moveMonsters(){
   if(monstersFrozen) return; // Don't move if frozen
   
-  monster.forEach(m => {
+  monster.forEach((m, index) => {
     const head = snake[0];
     const dx = head.x - m.x;
     const dy = head.y - m.y;
     
-    if(Math.abs(dx) > Math.abs(dy)){
-      if(dx > 0) m.x++;
-      else m.x--;
+    // Different strategy for each monster in hard mode
+    if(difficulty === 'hard' && monster.length > 1) {
+      if(index === 0) {
+        // Monster 1: Direct chase
+        if(Math.abs(dx) > Math.abs(dy)){
+          if(dx > 0) m.x++;
+          else m.x--;
+        } else {
+          if(dy > 0) m.y++;
+          else m.y--;
+        }
+      } else {
+        // Monster 2: Try to cut off snake by going perpendicular
+        // Move perpendicular to snake's direction to flank
+        if(Math.abs(dir.x) > 0) {
+          // Snake moving horizontally, monster moves vertically to cut off
+          if(dy > 0) m.y++;
+          else if(dy < 0) m.y--;
+          else if(dx > 0) m.x++;
+          else m.x--;
+        } else {
+          // Snake moving vertically, monster moves horizontally to cut off
+          if(dx > 0) m.x++;
+          else if(dx < 0) m.x--;
+          else if(dy > 0) m.y++;
+          else m.y--;
+        }
+      }
     } else {
-      if(dy > 0) m.y++;
-      else m.y--;
+      // Easy/Normal mode OR single monster: predict and chase
+      const predictedX = head.x + dir.x * 2;
+      const predictedY = head.y + dir.y * 2;
+      
+      const predDx = predictedX - m.x;
+      const predDy = predictedY - m.y;
+      
+      const targetDx = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDx : dx;
+      const targetDy = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDy : dy;
+      
+      if(Math.abs(targetDx) > Math.abs(targetDy)){
+        if(targetDx > 0) m.x++;
+        else m.x--;
+      } else {
+        if(targetDy > 0) m.y++;
+        else m.y--;
+      }
     }
     
     m.x = (m.x + COLS) % COLS;
@@ -224,10 +271,27 @@ function gameTick(){
     return;
   }
 
-  // Check collision with monster
-  if (monster.some(m => m.x===head.x && m.y===head.y)) {
-    gameOver();
-    return;
+  // Check collision with ALL monsters BEFORE they move
+  for(let i = 0; i < monster.length; i++){
+    if(monster[i].x === head.x && monster[i].y === head.y){
+      gameOver();
+      return;
+    }
+  }
+
+  // Move monsters
+  monsterMoveCounter++;
+  if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
+    moveMonsters();
+    monsterMoveCounter = 0;
+    
+    // Check collision with ALL monsters AFTER they move
+    for(let i = 0; i < monster.length; i++){
+      if(monster[i].x === head.x && monster[i].y === head.y){
+        gameOver();
+        return;
+      }
+    }
   }
 
   snake.unshift(head);
@@ -259,13 +323,6 @@ function gameTick(){
     if(freezeDuration <= 0){
       monstersFrozen = false;
     }
-  }
-
-  // Move monsters at slower intervals
-  monsterMoveCounter++;
-  if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
-    moveMonsters();
-    monsterMoveCounter = 0;
   }
 
   draw();
@@ -388,6 +445,57 @@ window.addEventListener('keydown', (e) => {
   if ((key === 'ArrowDown' || key === 's') && dir.y !== -1) dir = {x:0,y:1};
   if ((key === 'ArrowLeft' || key === 'a') && dir.x !== 1) dir = {x:-1,y:0};
   if ((key === 'ArrowRight' || key === 'd') && dir.x !== -1) dir = {x:1,y:0};
+});
+
+// Touch controls
+const controlBtns = document.querySelectorAll('.control-btn');
+controlBtns.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const direction = btn.dataset.dir;
+    if (direction === 'up' && dir.y !== 1) dir = {x:0,y:-1};
+    if (direction === 'down' && dir.y !== -1) dir = {x:0,y:1};
+    if (direction === 'left' && dir.x !== 1) dir = {x:-1,y:0};
+    if (direction === 'right' && dir.x !== -1) dir = {x:1,y:0};
+  });
+  
+  btn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const direction = btn.dataset.dir;
+    if (direction === 'up' && dir.y !== 1) dir = {x:0,y:-1};
+    if (direction === 'down' && dir.y !== -1) dir = {x:0,y:1};
+    if (direction === 'left' && dir.x !== 1) dir = {x:-1,y:0};
+    if (direction === 'right' && dir.x !== -1) dir = {x:1,y:0};
+  });
+});
+
+// Swipe controls
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+  
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    // Horizontal swipe
+    if (deltaX > 30 && dir.x !== -1) dir = {x:1,y:0};
+    else if (deltaX < -30 && dir.x !== 1) dir = {x:-1,y:0};
+  } else {
+    // Vertical swipe
+    if (deltaY > 30 && dir.y !== -1) dir = {x:0,y:1};
+    else if (deltaY < -30 && dir.y !== 1) dir = {x:0,y:-1};
+  }
 });
 
 restartBtn.addEventListener('click', resetGame);

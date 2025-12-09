@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Snake Game with Monster</title>
-   <style>
+  <style>
     body {
       display:flex;
       flex-direction:column;
@@ -170,6 +170,9 @@
 </head>
 <body>
 
+<!-- เพลงพื้นหลัง (เปลี่ยน src ตามไฟล์จริงได้) -->
+<audio id="bgm" src="bgm.mp3" loop></audio>
+
 <div class="ui">
   Score: <span id="score">0</span><br>
   High Score: <span id="highScore">0</span>
@@ -221,6 +224,7 @@ const diffBtns = document.querySelectorAll('.diff-btn');
 const touchBtns = document.querySelectorAll('.touch-btn');
 const leaderboardEl = document.getElementById('leaderboard');
 const lbModeText = document.getElementById('lbModeText');
+const bgm = document.getElementById('bgm'); // เพลงพื้นหลัง
 
 const GRID = 20;
 const COLS = canvas.width / GRID;
@@ -233,6 +237,8 @@ let freezeItem = null;
 let monstersFrozen = false;
 let freezeDuration = 0;
 let nextFreezeScore = 100;
+let bgmStarted = false; // กันเล่นเพลงซ้ำตอนเริ่ม
+
 highScoreEl.textContent = highScore;
 
 const difficultySettings = {
@@ -240,6 +246,16 @@ const difficultySettings = {
   normal: { snakeSpeed: 80,  monsterMoveInterval: 3, monsterCount: 1 },
   hard:   { snakeSpeed: 70,  monsterMoveInterval: 2, monsterCount: 2 }
 };
+
+// เริ่มเพลงหลัง user มี interaction
+function startBgm() {
+  if (!bgmStarted) {
+    bgm.play().catch(() => {
+      // ถ้าเล่นไม่ได้เพราะ policy ของ browser ก็ไม่ error
+    });
+    bgmStarted = true;
+  }
+}
 
 async function loadLeaderboard() {
   try {
@@ -356,6 +372,7 @@ function updateHardMonstersByScore() {
   if (difficulty !== "hard") return;
 
   let targetCount = 2;
+  // ตัวที่ 3 มาตอน 50 คะแนน, ตัวที่ 4 มาตอน 100 คะแนน
   if (score >= 100) targetCount = 4;
   else if (score >= 50) targetCount = 3;
 
@@ -638,6 +655,8 @@ function setDirection(d){
 }
 
 window.addEventListener('keydown', (e) => {
+  startBgm(); // เริ่มเพลงเมื่อผู้เล่นกดปุ่มครั้งแรก
+
   const key = e.key;
   if (key === 'ArrowUp'    || key === 'w') setDirection('up');
   if (key === 'ArrowDown'  || key === 's') setDirection('down');
@@ -649,6 +668,7 @@ touchBtns.forEach(btn => {
   const d = btn.dataset.dir;
   const handler = (e) => {
     e.preventDefault();
+    startBgm();     // เริ่มเพลงเมื่อกดปุ่มจอยสติ๊ก
     setDirection(d);
   };
   btn.addEventListener('click', handler);
@@ -660,6 +680,7 @@ let touchStartY = 0;
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
+  startBgm(); // แตะหน้าจอให้เพลงเริ่ม
   touchStartX = e.touches[0].clientX;
   touchStartY = e.touches[0].clientY;
 });
@@ -681,10 +702,12 @@ canvas.addEventListener('touchend', (e) => {
   }
 });
 
-restartBtn.addEventListener('click', resetGame);
+restartBtn.addEventListener('click', () => {
+  startBgm(); // กดรีสตาร์ทให้เพลงเล่นด้วย
+  resetGame();
+});
 
 resetGame();
 </script>
 </body>
 </html>
-

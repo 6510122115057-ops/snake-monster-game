@@ -358,91 +358,72 @@ function placeFreezeItem(){
 }
 
 function moveMonsters(){
-  if(monstersFrozen) return;
-
   monster.forEach((m, index) => {
     const head = snake[0];
-    const dx = head.x - m.x;
-    const dy = head.y - m.y;
 
+    // ===== 1. ทำนายตำแหน่งในอนาคตของงู =====
+    let predict = 2;
+    if (difficulty === "hard") predict = 4;
+
+    const predictedX = (head.x + dir.x * predict + COLS) % COLS;
+    const predictedY = (head.y + dir.y * predict + ROWS) % ROWS;
+
+    // ===== 2. เป้าหมายแตกต่างตามตัวมอน =====
+    let targetX = predictedX;
+    let targetY = predictedY;
+
+    if (difficulty === "hard") {
+      if (index === 0) {
+        // ตัวที่ 1: ไล่ตรง
+        targetX = head.x;
+        targetY = head.y;
+      } 
+      else if (index === 1) {
+        // ตัวที่ 2: ดักด้านขวา
+        targetX = (predictedX + 2) % COLS;
+        targetY = predictedY;
+      } 
+      else if (index === 2) {
+        // ตัวที่ 3: ดักด้านล่าง
+        targetX = predictedX;
+        targetY = (predictedY + 2) % ROWS;
+      } 
+      else if (index === 3) {
+        // ตัวที่ 4: อ้อมตัดหน้า
+        targetX = (predictedX + 3) % COLS;
+        targetY = (predictedY + 3) % ROWS;
+      }
+    }
+
+    // ===== 3. คำนวณทิศทาง =====
+    const dx = targetX - m.x;
+    const dy = targetY - m.y;
+
+    // ===== 4. กันมอนทับกัน =====
     let tooClose = false;
-    for(let i = 0; i < monster.length; i++){
-      if(i !== index) {
-        const dist = Math.abs(m.x - monster[i].x) + Math.abs(m.y - monster[i].y);
-        if(dist < 3) {
-          tooClose = true;
-          break;
-        }
+    monster.forEach(o => {
+      if (o !== m) {
+        const d = Math.abs(o.x - m.x) + Math.abs(o.y - m.y);
+        if (d < 2) tooClose = true;
       }
-    }
+    });
 
-    if(difficulty === 'hard' && monster.length > 1) {
-      if(index === 0) {
-        if(tooClose) {
-          if(Math.abs(dy) > 0) {
-            if(dy > 0) m.y++;
-            else m.y--;
-          } else if(Math.abs(dx) > 0) {
-            if(dx > 0) m.x++;
-            else m.x--;
-          }
-        } else {
-          if(Math.abs(dx) > Math.abs(dy)){
-            if(dx > 0) m.x++;
-            else m.x--;
-          } else {
-            if(dy > 0) m.y++;
-            else m.y--;
-          }
-        }
-      } else {
-        const predictedX = head.x + dir.x * 4;
-        const predictedY = head.y + dir.y * 4;
-
-        const predDx = predictedX - m.x;
-        const predDy = predictedY - m.y;
-
-        if(tooClose) {
-          if(Math.abs(dir.x) > 0) {
-            if(predDy > 0) m.y++;
-            else if(predDy < 0) m.y--;
-            else if(Math.random() > 0.5) m.y++;
-            else m.y--;
-          } else {
-            if(predDx > 0) m.x++;
-            else if(predDx < 0) m.x--;
-            else if(Math.random() > 0.5) m.x++;
-            else m.x--;
-          }
-        } else {
-          if(Math.abs(predDx) > Math.abs(predDy)){
-            if(predDx > 0) m.x++;
-            else m.x--;
-          } else {
-            if(predDy > 0) m.y++;
-            else m.y--;
-          }
-        }
-      }
+    // ===== 5. เลือกเดินแบบฉลาด =====
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) m.x++;
+      else m.x--;
     } else {
-      const predictedX = head.x + dir.x * 2;
-      const predictedY = head.y + dir.y * 2;
-
-      const predDx = predictedX - m.x;
-      const predDy = predictedY - m.y;
-
-      const targetDx = (Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0) ? predDx : dx;
-      const targetDy = (Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0) ? predDy : dy;
-
-      if(Math.abs(targetDx) > Math.abs(targetDy)){
-        if(targetDx > 0) m.x++;
-        else m.x--;
-      } else {
-        if(targetDy > 0) m.y++;
-        else m.y--;
-      }
+      if (dy > 0) m.y++;
+      else m.y--;
     }
 
+    // ถ้าใกล้มอนตัวอื่นเกินไป → เบี่ยงหลบ
+    if (tooClose) {
+      if (Math.random() > 0.5) m.x += Math.random() > 0.5 ? 1 : -1;
+      else m.y += Math.random() > 0.5 ? 1 : -1;
+    }
+
+    // ===== 6. วนขอบจอ =====
     m.x = (m.x + COLS) % COLS;
     m.y = (m.y + ROWS) % ROWS;
   });
@@ -675,3 +656,4 @@ resetGame();
 </script>
 </body>
 </html>
+

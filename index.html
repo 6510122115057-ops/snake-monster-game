@@ -80,15 +80,16 @@
 
   /* ===== จอยสติ๊กบนมือถือ ===== */
   .touch-controls {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    z-index: 9999;
-  }
+  position: fixed;
+  top: 90%;
+  left: 50%;
+  transform: translate(-50%, -50%);  /* ดึงกลับให้กึ่งกลางจริง */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+}
 
   .touch-controls-row {
     display: flex;

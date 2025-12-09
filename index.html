@@ -81,7 +81,6 @@
       transform: translateY(0);
     }
 
-    /* ===== จอยสติ๊ก (มือถือ) ===== */
     .touch-controls-wrapper {
       position: fixed;
       bottom: 20px;
@@ -92,7 +91,6 @@
       z-index: 9999;
     }
 
-    /* มือถือ = เห็น (ค่าเริ่มต้น) */
     .touch-controls {
       display: flex;
       flex-direction: column;
@@ -100,7 +98,6 @@
       gap: 8px;
     }
 
-    /* จอใหญ่ (>= 700px) = ซ่อนจอย */
     @media (min-width: 700px) {
       .touch-controls-wrapper {
         display:none;
@@ -133,7 +130,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
 
-    /* leaderboard list */
     #leaderboard {
       padding-left: 18px;
       margin: 4px 0 0 0;
@@ -149,7 +145,6 @@
   Score: <span id="score">0</span><br>
   High Score: <span id="highScore">0</span>
 
-  <!-- โฆษณา -->
   <div style="margin-top:10px; font-size:13px; line-height:1.4; background:rgba(255,255,255,0.15); padding:10px; border-radius:8px;">
     ใครได้ถึง <b>10000 แต้ม</b> ในโหมด <b>HARD</b><br>
     อัดคลิปวิดีโอส่งมาที่<br>
@@ -157,7 +152,6 @@
     พร้อมส่งเลขบัญชี เดี๋ยวโอนเงินรางวัลให้ <b>100 บาท</b>
   </div>
 
-  <!-- Leaderboard ออนไลน์ -->
   <div style="margin-top:12px; font-size:14px;">
     <b>Online Leaderboard</b>
     <div style="font-size:12px;opacity:0.8;">โหมด: <span id="lbModeText">easy</span></div>
@@ -175,7 +169,6 @@
 
 <canvas id="game" width="400" height="400"></canvas>
 
-<!-- ===== จอยสติ๊กควบคุมทิศทาง (มือถือ) ===== -->
 <div class="touch-controls-wrapper">
   <div class="touch-controls">
     <button class="touch-btn" data-dir="up">▲</button>
@@ -188,7 +181,6 @@
 </div>
 
 <script>
-/* ====== CONFIG ====== */
 const SCORE_API_BASE = "https://snake-scoreboard-backend.onrender.com/api";
 
 const canvas = document.getElementById('game');
@@ -220,7 +212,6 @@ const difficultySettings = {
   hard:   { snakeSpeed: 70,  monsterMoveInterval: 2, monsterCount: 2 }
 };
 
-/* ====== Leaderboard Functions ====== */
 async function loadLeaderboard() {
   try {
     lbModeText.textContent = difficulty;
@@ -266,8 +257,6 @@ async function submitScore() {
   }
 }
 
-/* ====== Game Logic ====== */
-
 diffBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     diffBtns.forEach(b => b.classList.remove('active'));
@@ -280,7 +269,9 @@ diffBtns.forEach(btn => {
 function resetGame(){
   snake = [{x: Math.floor(COLS/2), y: Math.floor(ROWS/2)}];
   dir = {x:1, y:0};
+  food = {x: 0, y: 0};
   placeFood();
+  monster = [];
   spawnMonsters();
   freezeItem = null;
   monstersFrozen = false;
@@ -292,8 +283,6 @@ function resetGame(){
   monsterMoveCounter = 0;
   clearInterval(tickInterval);
   tickInterval = setInterval(gameTick, difficultySettings[difficulty].snakeSpeed);
-
-  // โหลด leaderboard ของโหมดปัจจุบัน
   loadLeaderboard();
 }
 
@@ -349,58 +338,13 @@ function updateHardMonstersByScore() {
         x: Math.floor(Math.random() * COLS),
         y: Math.floor(Math.random() * ROWS),
       };
-      const dist =
-        Math.abs(m.x - snake[0].x) +
-        Math.abs(m.y - snake[0].y);
+      const dist = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
 
       if (
         !snake.some(s => s.x === m.x && s.y === m.y) &&
         !monster.some(o => o.x === m.x && o.y === m.y) &&
         dist > 6
       ) {
-        monster.push(m);
-        break;
-      }
-      attempts++;
-    }
-  }
-}
-function updateHardMonstersByScore() {
-  if (difficulty !== "hard") return;
-
-  let targetCount = 2;
-  if (score >= 800) targetCount = 4;
-  else if (score >= 400) targetCount = 3;
-
-  while (monster.length < targetCount) {
-    let m;
-    let attempts = 0;
-    while (attempts < 100) {
-      m = {
-        x: Math.floor(Math.random() * COLS),
-        y: Math.floor(Math.random() * ROWS),
-      };
-      const dist =
-        Math.abs(m.x - snake[0].x) +
-        Math.abs(m.y - snake[0].y);
-
-      if (
-        !snake.some(s => s.x === m.x && s.y === m.y) &&
-        !monster.some(o => o.x === m.x && o.y === m.y) &&
-        dist > 6
-      ) {
-        monster.push(m);
-        break;
-      }
-      attempts++;
-    }
-  }
-}
-
-      if (!snake.some(s => s.x===m.x && s.y===m.y) &&
-          (food.x !== m.x || food.y !== m.y) &&
-          distanceFromSnake > 5 &&
-          farFromOthers) {
         monster.push(m);
         break;
       }
@@ -433,39 +377,29 @@ function placeFreezeItem(){
 }
 
 function moveMonsters(){
-
-  // ✅ น้ำแข็งหยุดมอน ทำงาน 100%
   if (monstersFrozen) return;
 
   monster.forEach((m, index) => {
     const head = snake[0];
-
-    // ===== 1. ทำนายตำแหน่งงูล่วงหน้า =====
     let predict = (difficulty === "hard") ? 4 : 2;
-
     const predictedX = (head.x + dir.x * predict + COLS) % COLS;
     const predictedY = (head.y + dir.y * predict + ROWS) % ROWS;
 
-    // ===== 2. กำหนดเป้าหมายตามมอนแต่ละตัว =====
     let targetX = predictedX;
     let targetY = predictedY;
 
     if (difficulty === "hard") {
       if (index === 0) {
-        // ตัวที่ 1 ไล่ตรง
         targetX = head.x;
         targetY = head.y;
       }
       else if (index === 1) {
-        // ตัวที่ 2 ดักข้าง
         targetX = (predictedX + 2) % COLS;
       }
       else if (index === 2) {
-        // ตัวที่ 3 ดักล่าง
         targetY = (predictedY + 2) % ROWS;
       }
       else if (index === 3) {
-        // ตัวที่ 4 อ้อมตัดหน้า
         targetX = (predictedX + 3) % COLS;
         targetY = (predictedY + 3) % ROWS;
       }
@@ -474,7 +408,6 @@ function moveMonsters(){
     const dx = targetX - m.x;
     const dy = targetY - m.y;
 
-    // ===== 3. กันมอนทับกัน =====
     let tooClose = false;
     monster.forEach(o => {
       if (o !== m) {
@@ -483,20 +416,17 @@ function moveMonsters(){
       }
     });
 
-    // ===== 4. เดินแบบฉลาด =====
     if (Math.abs(dx) > Math.abs(dy)) {
       m.x += dx > 0 ? 1 : -1;
     } else {
       m.y += dy > 0 ? 1 : -1;
     }
 
-    // ถ้าเบียดเกินไป → เบี่ยงหลบ
     if (tooClose) {
       if (Math.random() > 0.5) m.x += Math.random() > 0.5 ? 1 : -1;
       else m.y += Math.random() > 0.5 ? 1 : -1;
     }
 
-    // ===== 5. วนจอ =====
     m.x = (m.x + COLS) % COLS;
     m.y = (m.y + ROWS) % ROWS;
   });
@@ -562,8 +492,7 @@ function gameTick(){
     }
   }
   
-updateHardMonstersByScore();
-
+  updateHardMonstersByScore();
   draw();
 }
 
@@ -672,8 +601,6 @@ function draw(){
   ctx.shadowBlur = 0;
 }
 
-/* ====== Controls ====== */
-
 function setDirection(d){
   if (d === 'up'    && dir.y !== 1)  dir = {x:0,y:-1};
   if (d === 'down'  && dir.y !== -1) dir = {x:0,y:1};
@@ -731,6 +658,3 @@ resetGame();
 </script>
 </body>
 </html>
-
-
-

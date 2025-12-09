@@ -4,6 +4,40 @@
 <meta charset="utf-8" />
 <title>Snake Game with Monster</title>
 <style>
+
+/* TOUCH CONTROLS */
+.touch-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+}
+
+.touch-controls button {
+  width: 60px;
+  height: 60px;
+  font-size: 28px;
+  font-weight: bold;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255,255,255,0.25);
+  color: white;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.touch-controls button:active {
+  background: rgba(255,255,255,0.5);
+}
+
+@media (min-width: 700px) {
+  .touch-controls { display: none; }
+}
+
   body { 
     display:flex; 
     align-items:center; 
@@ -83,15 +117,6 @@
 <div class="ui">
   Score: <span id="score">0</span><br>
   High Score: <span id="highScore">0</span>
-
-    <!-- โฆษณาที่คุณต้องการ -->
-  <div style="margin-top:10px; font-size:13px; line-height:1.4; background:rgba(255,255,255,0.15); padding:10px; border-radius:8px;">
-    ใครได้ถึง <b>1000 แต้ม</b> ในโหมด <b>HARD</b><br>
-    อัดคลิปวิดีโอส่งมาที่<br>
-    <b>bosszazababa@gmail.com</b><br>
-    พร้อมส่งเลขบัญชี เดี๋ยวโอนเงินรางวัลให้ <b>100 บาท</b>
-  </div>
-  
   <div class="difficulty">
     <div style="font-size:14px; margin-bottom:5px;">Difficulty:</div>
     <button class="diff-btn active" data-level="easy">Easy</button>
@@ -571,5 +596,15 @@ restartBtn.addEventListener('click', resetGame);
 
 resetGame();
 </script>
+
+<div class="touch-controls">
+    <button class="control-btn" data-dir="up">▲</button>
+    <div>
+      <button class="control-btn" data-dir="left">◀</button>
+      <button class="control-btn" data-dir="down">▼</button>
+      <button class="control-btn" data-dir="right">▶</button>
+    </div>
+  </div>
+  
 </body>
 </html>

@@ -1,65 +1,196 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Snake Game with Monster</title>
-<style>
-body {
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
-  margin:0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color:#fff;
-  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-#game {
-  background:#1a1a2e;
-  image-rendering:pixelated;
-  border-radius:12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-}
-.ui {
-  position:fixed;
-  top:20px;
-  left:20px;
-  background: rgba(255,255,255,0.1);
-  padding: 15px 20px;
-  border-radius: 12px;
-  max-width:280px;
-}
-.diff-btn.active { background:#4ecdc4; }
-.touch-controls-wrapper { position:fixed; bottom:20px; right:20px; }
-.touch-btn { width:70px; height:70px; font-size:32px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game with Monster</title>
+  <style>
+    body {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      margin:0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:#fff;
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #game {
+      background:#1a1a2e;
+      image-rendering:pixelated;
+      border-radius:12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .ui {
+      position:fixed;
+      top:20px;
+      left:20px;
+      color:#fff;
+      font-size:18px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      max-width: 280px;
+    }
+    .difficulty {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .diff-btn {
+      margin: 5px 5px 0 0;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid transparent;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 13px;
+    }
+    .diff-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .diff-btn.active {
+      background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+      border-color: #4ecdc4;
+      box-shadow: 0 0 15px rgba(78,205,196,0.5);
+    }
+    button#restart {
+      margin-top:10px;
+      padding:8px 16px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border:none;
+      border-radius:8px;
+      color:#fff;
+      font-weight:bold;
+      cursor:pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-size:14px;
+      width: 100%;
+    }
+    button#restart:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245,87,108,0.4);
+    }
+    button#restart:active {
+      transform: translateY(0);
+    }
+
+    /* ===== จอยสติ๊ก (มือถือ) ===== */
+    .touch-controls-wrapper {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    /* มือถือ = เห็น (ค่าเริ่มต้น) */
+    .touch-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* จอใหญ่ (>= 700px) = ซ่อนจอย */
+    @media (min-width: 700px) {
+      .touch-controls-wrapper {
+        display:none;
+      }
+    }
+
+    .touch-controls-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .touch-btn {
+      width: 80px;
+      height: 80px;
+      font-size: 32px;
+      font-weight: bold;
+      border-radius: 20px;
+      border: none;
+      background: rgba(255,255,255,0.22);
+      color: white;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+    }
+
+    .touch-btn:active {
+      background: rgba(255,255,255,0.45);
+      transform: scale(0.94);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+
+    /* leaderboard list */
+    #leaderboard {
+      padding-left: 18px;
+      margin: 4px 0 0 0;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+  </style>
 </head>
 <body>
 
 <div class="ui">
-Score: <span id="score">0</span><br>
-High Score: <span id="highScore">0</span><br><br>
+  Score: <span id="score">0</span><br>
+  High Score: <span id="highScore">0</span>
 
-Difficulty:
-<button class="diff-btn active" data-level="easy">Easy</button>
-<button class="diff-btn" data-level="normal">Normal</button>
-<button class="diff-btn" data-level="hard">Hard</button>
-<br><br>
-<button id="restart">Restart</button>
+  <!-- โฆษณา -->
+  <div style="margin-top:10px; font-size:13px; line-height:1.4; background:rgba(255,255,255,0.15); padding:10px; border-radius:8px;">
+    ใครได้ถึง <b>10000 แต้ม</b> ในโหมด <b>HARD</b><br>
+    อัดคลิปวิดีโอส่งมาที่<br>
+    <b>bosszazababa@gmail.com</b><br>
+    พร้อมส่งเลขบัญชี เดี๋ยวโอนเงินรางวัลให้ <b>100 บาท</b>
+  </div>
+
+  <!-- Leaderboard ออนไลน์ -->
+  <div style="margin-top:12px; font-size:14px;">
+    <b>Online Leaderboard</b>
+    <div style="font-size:12px;opacity:0.8;">โหมด: <span id="lbModeText">easy</span></div>
+    <ol id="leaderboard"></ol>
+  </div>
+
+  <div class="difficulty">
+    <div style="font-size:14px; margin-bottom:5px;">Difficulty:</div>
+    <button class="diff-btn active" data-level="easy">Easy</button>
+    <button class="diff-btn" data-level="normal">Normal</button>
+    <button class="diff-btn" data-level="hard">Hard</button>
+  </div>
+  <button id="restart">Restart</button>
 </div>
 
 <canvas id="game" width="400" height="400"></canvas>
 
+<!-- ===== จอยสติ๊กควบคุมทิศทาง (มือถือ) ===== -->
 <div class="touch-controls-wrapper">
-  <button class="touch-btn" data-dir="up">▲</button><br>
-  <button class="touch-btn" data-dir="left">◀</button>
-  <button class="touch-btn" data-dir="down">▼</button>
-  <button class="touch-btn" data-dir="right">▶</button>
+  <div class="touch-controls">
+    <button class="touch-btn" data-dir="up">▲</button>
+    <div class="touch-controls-row">
+      <button class="touch-btn" data-dir="left">◀</button>
+      <button class="touch-btn" data-dir="down">▼</button>
+      <button class="touch-btn" data-dir="right">▶</button>
+    </div>
+  </div>
 </div>
 
 <script>
+/* ====== CONFIG ====== */
+const SCORE_API_BASE = "https://snake-scoreboard-backend.onrender.com/api";
+
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
@@ -67,6 +198,8 @@ const highScoreEl = document.getElementById('highScore');
 const restartBtn = document.getElementById('restart');
 const diffBtns = document.querySelectorAll('.diff-btn');
 const touchBtns = document.querySelectorAll('.touch-btn');
+const leaderboardEl = document.getElementById('leaderboard');
+const lbModeText = document.getElementById('lbModeText');
 
 const GRID = 20;
 const COLS = canvas.width / GRID;
@@ -74,17 +207,66 @@ const ROWS = canvas.height / GRID;
 
 let snake, dir, food, monster, running, score, tickInterval, monsterMoveCounter;
 let difficulty = 'easy';
+let highScore = 0;
 let freezeItem = null;
 let monstersFrozen = false;
 let freezeDuration = 0;
 let nextFreezeScore = 100;
-let highScore = 0;
+highScoreEl.textContent = highScore;
 
 const difficultySettings = {
   easy:   { snakeSpeed: 100, monsterMoveInterval: 4, monsterCount: 1 },
   normal: { snakeSpeed: 80,  monsterMoveInterval: 3, monsterCount: 1 },
   hard:   { snakeSpeed: 70,  monsterMoveInterval: 2, monsterCount: 2 }
 };
+
+/* ====== Leaderboard Functions ====== */
+async function loadLeaderboard() {
+  try {
+    lbModeText.textContent = difficulty;
+    const res = await fetch(`${SCORE_API_BASE}/scores/top?mode=${difficulty}`);
+    const data = await res.json();
+
+    leaderboardEl.innerHTML = "";
+    if (!Array.isArray(data) || data.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "ยังไม่มีคะแนน";
+      leaderboardEl.appendChild(li);
+      return;
+    }
+    data.forEach((row) => {
+      const li = document.createElement("li");
+      li.textContent = `${row.name} — ${row.score}`;
+      leaderboardEl.appendChild(li);
+    });
+  } catch (e) {
+    console.error("Load leaderboard error", e);
+  }
+}
+
+async function submitScore() {
+  try {
+    let name = localStorage.getItem("snakePlayerName");
+    if (!name) {
+      name = prompt("ใส่ชื่อสำหรับจัดอันดับออนไลน์ (สูงสุด 20 ตัวอักษร):", "Player");
+      if (!name) return;
+      name = name.toString().slice(0, 20);
+      localStorage.setItem("snakePlayerName", name);
+    }
+
+    await fetch(`${SCORE_API_BASE}/scores`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, score, mode: difficulty }),
+    });
+
+    loadLeaderboard();
+  } catch (e) {
+    console.error("Submit score error", e);
+  }
+}
+
+/* ====== Game Logic ====== */
 
 diffBtns.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -110,20 +292,37 @@ function resetGame(){
   monsterMoveCounter = 0;
   clearInterval(tickInterval);
   tickInterval = setInterval(gameTick, difficultySettings[difficulty].snakeSpeed);
+
+  // โหลด leaderboard ของโหมดปัจจุบัน
+  loadLeaderboard();
 }
 
 function spawnMonsters(){
   monster = [];
   const count = difficultySettings[difficulty].monsterCount;
-  for(let i = 0; i < count; i++){
-    monster.push({
-      x: Math.floor(Math.random() * COLS),
-      y: Math.floor(Math.random() * ROWS)
-    });
-  }
-}
+  const headPos = snake[0];
 
-function updateHardMonstersByScore() {
+  for(let i = 0; i < count; i++){
+    let attempts = 0;
+    while(attempts < 100){
+      let m;
+      if(i === 0) {
+        m = { x: Math.floor(Math.random() * (COLS/2)), y: Math.floor(Math.random() * ROWS) };
+      } else {
+        m = { x: Math.floor(COLS/2 + Math.random() * (COLS/2)), y: Math.floor(Math.random() * ROWS) };
+      }
+
+      const distanceFromSnake = Math.abs(m.x - headPos.x) + Math.abs(m.y - headPos.y);
+      let farFromOthers = true;
+      for(let j = 0; j < monster.length; j++){
+        const dist = Math.abs(m.x - monster[j].x) + Math.abs(m.y - monster[j].y);
+        if(dist < 8) {
+          farFromOthers = false;
+          break;
+        }
+      }
+
+      function updateHardMonstersByScore() {
   if (difficulty !== "hard") return;
 
   let targetCount = 2;
@@ -131,40 +330,130 @@ function updateHardMonstersByScore() {
   else if (score >= 400) targetCount = 3;
 
   while (monster.length < targetCount) {
-    monster.push({
-      x: Math.floor(Math.random()*COLS),
-      y: Math.floor(Math.random()*ROWS)
-    });
+    let m;
+    let attempts = 0;
+    while (attempts < 100) {
+      m = {
+        x: Math.floor(Math.random() * COLS),
+        y: Math.floor(Math.random() * ROWS),
+      };
+      const dist =
+        Math.abs(m.x - snake[0].x) +
+        Math.abs(m.y - snake[0].y);
+
+      if (
+        !snake.some(s => s.x === m.x && s.y === m.y) &&
+        !monster.some(o => o.x === m.x && o.y === m.y) &&
+        dist > 6
+      ) {
+        monster.push(m);
+        break;
+      }
+      attempts++;
+    }
+  }
+}
+
+      if (!snake.some(s => s.x===m.x && s.y===m.y) &&
+          (food.x !== m.x || food.y !== m.y) &&
+          distanceFromSnake > 5 &&
+          farFromOthers) {
+        monster.push(m);
+        break;
+      }
+      attempts++;
+    }
   }
 }
 
 function placeFood(){
-  food = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+  while(true){
+    const f = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+    if (!snake.some(s => s.x===f.x && s.y===f.y) &&
+        (!freezeItem || (f.x !== freezeItem.x || f.y !== freezeItem.y))) {
+      food = f;
+      break;
+    }
+  }
 }
 
 function placeFreezeItem(){
-  freezeItem = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+  while(true){
+    const f = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+    if (!snake.some(s => s.x===f.x && s.y===f.y) &&
+        (f.x !== food.x || f.y !== food.y) &&
+        !monster.some(m => m.x===f.x && m.y===f.y)) {
+      freezeItem = f;
+      break;
+    }
+  }
 }
 
 function moveMonsters(){
+
+  // ✅ น้ำแข็งหยุดมอน ทำงาน 100%
   if (monstersFrozen) return;
+
   monster.forEach((m, index) => {
     const head = snake[0];
-    let targetX = head.x;
-    let targetY = head.y;
+
+    // ===== 1. ทำนายตำแหน่งงูล่วงหน้า =====
+    let predict = (difficulty === "hard") ? 4 : 2;
+
+    const predictedX = (head.x + dir.x * predict + COLS) % COLS;
+    const predictedY = (head.y + dir.y * predict + ROWS) % ROWS;
+
+    // ===== 2. กำหนดเป้าหมายตามมอนแต่ละตัว =====
+    let targetX = predictedX;
+    let targetY = predictedY;
 
     if (difficulty === "hard") {
-      if (index === 1) targetX += 2;
-      if (index === 2) targetY += 2;
-      if (index === 3) { targetX += 3; targetY += 3; }
+      if (index === 0) {
+        // ตัวที่ 1 ไล่ตรง
+        targetX = head.x;
+        targetY = head.y;
+      }
+      else if (index === 1) {
+        // ตัวที่ 2 ดักข้าง
+        targetX = (predictedX + 2) % COLS;
+      }
+      else if (index === 2) {
+        // ตัวที่ 3 ดักล่าง
+        targetY = (predictedY + 2) % ROWS;
+      }
+      else if (index === 3) {
+        // ตัวที่ 4 อ้อมตัดหน้า
+        targetX = (predictedX + 3) % COLS;
+        targetY = (predictedY + 3) % ROWS;
+      }
     }
 
     const dx = targetX - m.x;
     const dy = targetY - m.y;
 
-    if (Math.abs(dx) > Math.abs(dy)) m.x += dx > 0 ? 1 : -1;
-    else m.y += dy > 0 ? 1 : -1;
+    // ===== 3. กันมอนทับกัน =====
+    let tooClose = false;
+    monster.forEach(o => {
+      if (o !== m) {
+        const d = Math.abs(o.x - m.x) + Math.abs(o.y - m.y);
+        if (d < 2) tooClose = true;
+      }
+    });
 
+    // ===== 4. เดินแบบฉลาด =====
+    if (Math.abs(dx) > Math.abs(dy)) {
+      m.x += dx > 0 ? 1 : -1;
+    } else {
+      m.y += dy > 0 ? 1 : -1;
+    }
+
+    // ถ้าเบียดเกินไป → เบี่ยงหลบ
+    if (tooClose) {
+      if (Math.random() > 0.5) m.x += Math.random() > 0.5 ? 1 : -1;
+      else m.y += Math.random() > 0.5 ? 1 : -1;
+    }
+
+    // ===== 5. วนจอ =====
     m.x = (m.x + COLS) % COLS;
     m.y = (m.y + ROWS) % ROWS;
   });
@@ -173,19 +462,33 @@ function moveMonsters(){
 function gameTick(){
   if(!running) return;
 
-  updateHardMonstersByScore();
-
   const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
   head.x = (head.x + COLS) % COLS;
   head.y = (head.y + ROWS) % ROWS;
 
-  if (snake.some(s => s.x===head.x && s.y===head.y)) return gameOver();
-  if (monster.some(m => m.x===head.x && m.y===head.y)) return gameOver();
+  if (snake.some(s => s.x===head.x && s.y===head.y)) {
+    gameOver();
+    return;
+  }
+
+  for(let i = 0; i < monster.length; i++){
+    if(monster[i].x === head.x && monster[i].y === head.y){
+      gameOver();
+      return;
+    }
+  }
 
   monsterMoveCounter++;
   if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
     moveMonsters();
     monsterMoveCounter = 0;
+
+    for(let i = 0; i < monster.length; i++){
+      if(monster[i].x === head.x && monster[i].y === head.y){
+        gameOver();
+        return;
+      }
+    }
   }
 
   snake.unshift(head);
@@ -215,40 +518,118 @@ function gameTick(){
       monstersFrozen = false;
     }
   }
+  
+updateHardMonstersByScore();
 
   draw();
 }
 
 function gameOver(){
   running = false;
-  if(score > highScore){
+  if (score > highScore) {
     highScore = score;
     highScoreEl.textContent = highScore;
   }
+
+  if (score > 0) {
+    submitScore();
+  }
+
+  draw();
+  ctx.fillStyle = "rgba(26,26,46,0.85)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = "#f5576c";
+  ctx.fillText("Game Over!", canvas.width/2, canvas.height/2 - 20);
+  ctx.font = "18px sans-serif";
+  ctx.shadowBlur = 0;
+  ctx.fillText("Press Restart to play again", canvas.width/2, canvas.height/2 + 20);
 }
 
 function draw(){
   ctx.fillStyle = "#1a1a2e";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = "#ff6b6b";
   ctx.fillStyle = "#ff6b6b";
-  ctx.fillRect(food.x*GRID, food.y*GRID, GRID, GRID);
+  ctx.beginPath();
+  ctx.arc(food.x*GRID+GRID/2, food.y*GRID+GRID/2, GRID/2-2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
 
   if(freezeItem){
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "#00d4ff";
     ctx.fillStyle = "#00d4ff";
-    ctx.fillRect(freezeItem.x*GRID, freezeItem.y*GRID, GRID, GRID);
+    ctx.beginPath();
+    ctx.arc(freezeItem.x*GRID+GRID/2, freezeItem.y*GRID+GRID/2, GRID/2-2, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    const cx = freezeItem.x*GRID+GRID/2;
+    const cy = freezeItem.y*GRID+GRID/2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-5); ctx.lineTo(cx, cy+5);
+    ctx.moveTo(cx-5, cy); ctx.lineTo(cx+5, cy);
+    ctx.moveTo(cx-3, cy-3); ctx.lineTo(cx+3, cy+3);
+    ctx.moveTo(cx-3, cy+3); ctx.lineTo(cx+3, cy-3);
+    ctx.stroke();
   }
 
   monster.forEach(m => {
-    ctx.fillStyle = monstersFrozen ? "#00d4ff" : "#ff0066";
-    ctx.fillRect(m.x*GRID, m.y*GRID, GRID, GRID);
+    if(monstersFrozen){
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = "#00d4ff";
+      ctx.fillStyle = "#00d4ff";
+    } else {
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = "#ff0066";
+      ctx.fillStyle = "#ff0066";
+    }
+
+    ctx.beginPath();
+    ctx.arc(m.x*GRID+GRID/2, m.y*GRID+GRID/2, GRID/2-1, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(m.x*GRID+GRID/2-3, m.y*GRID+GRID/2-2, 2, 0, Math.PI*2);
+    ctx.arc(m.x*GRID+GRID/2+3, m.y*GRID+GRID/2-2, 2, 0, Math.PI*2);
+    ctx.fill();
   });
 
-  snake.forEach(s => {
-    ctx.fillStyle = "#4ecdc4";
-    ctx.fillRect(s.x*GRID, s.y*GRID, GRID, GRID);
-  });
+  ctx.shadowBlur = 0;
+
+  for(let i=0;i<snake.length;i++){
+    const gradient = ctx.createLinearGradient(
+      snake[i].x*GRID, snake[i].y*GRID,
+      snake[i].x*GRID+GRID, snake[i].y*GRID+GRID
+    );
+    if(i===0) {
+      gradient.addColorStop(0, "#4ecdc4");
+      gradient.addColorStop(1, "#44a08d");
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#4ecdc4";
+    } else {
+      gradient.addColorStop(0, "#667eea");
+      gradient.addColorStop(1, "#764ba2");
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = "#667eea";
+    }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(snake[i].x*GRID+1, snake[i].y*GRID+1, GRID-2, GRID-2);
+  }
+  ctx.shadowBlur = 0;
 }
+
+/* ====== Controls ====== */
 
 function setDirection(d){
   if (d === 'up'    && dir.y !== 1)  dir = {x:0,y:-1};
@@ -257,20 +638,56 @@ function setDirection(d){
   if (d === 'right' && dir.x !== -1) dir = {x:1,y:0};
 }
 
-window.addEventListener('keydown', e => {
-  if(e.key === "ArrowUp") setDirection("up");
-  if(e.key === "ArrowDown") setDirection("down");
-  if(e.key === "ArrowLeft") setDirection("left");
-  if(e.key === "ArrowRight") setDirection("right");
+window.addEventListener('keydown', (e) => {
+  const key = e.key;
+  if (key === 'ArrowUp'    || key === 'w') setDirection('up');
+  if (key === 'ArrowDown'  || key === 's') setDirection('down');
+  if (key === 'ArrowLeft'  || key === 'a') setDirection('left');
+  if (key === 'ArrowRight' || key === 'd') setDirection('right');
 });
 
 touchBtns.forEach(btn => {
-  btn.onclick = () => setDirection(btn.dataset.dir);
+  const d = btn.dataset.dir;
+  const handler = (e) => {
+    e.preventDefault();
+    setDirection(d);
+  };
+  btn.addEventListener('click', handler);
+  btn.addEventListener('touchstart', handler, { passive:false });
 });
 
-restartBtn.onclick = resetGame;
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (deltaX > 30) setDirection('right');
+    else if (deltaX < -30) setDirection('left');
+  } else {
+    if (deltaY > 30) setDirection('down');
+    else if (deltaY < -30) setDirection('up');
+  }
+});
+
+restartBtn.addEventListener('click', resetGame);
 
 resetGame();
 </script>
 </body>
 </html>
+
+
+

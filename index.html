@@ -27,9 +27,9 @@
       image-rendering:pixelated;
       border-radius:12px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-      /* ทำให้ canvas ย่อ/ขยายตามหน้าจอ แต่ยังเป็นสี่เหลี่ยมจัตุรัส */
       width: min(90vw, 400px);
       height: min(90vw, 400px);
+      transition: box-shadow 0.15s ease;
     }
 
     .ui {
@@ -144,6 +144,47 @@
       font-size: 13px;
     }
 
+    /* ---------- เอฟเฟกต์สั่น ---------- */
+    @keyframes shake {
+      0%   { transform: translate(0,0); }
+      20%  { transform: translate(-4px,2px); }
+      40%  { transform: translate(4px,-2px); }
+      60%  { transform: translate(-3px,-2px); }
+      80%  { transform: translate(3px,2px); }
+      100% { transform: translate(0,0); }
+    }
+    #game.shake {
+      animation: shake 0.3s ease;
+    }
+
+    /* ---------- เอฟเฟกต์แฟลช ---------- */
+    @keyframes eatFlash {
+      0%   { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+      50%  { box-shadow: 0 0 45px rgba(78,205,196,0.9); }
+      100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    }
+    #game.eat-flash {
+      animation: eatFlash 0.25s ease-out;
+    }
+
+    @keyframes freezeFlash {
+      0%   { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+      50%  { box-shadow: 0 0 45px rgba(0,212,255,0.9); }
+      100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    }
+    #game.freeze-flash {
+      animation: freezeFlash 0.3s ease-out;
+    }
+
+    @keyframes hitFlash {
+      0%   { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+      50%  { box-shadow: 0 0 55px rgba(245,87,108,0.95); }
+      100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    }
+    #game.hit-flash {
+      animation: hitFlash 0.35s ease-out;
+    }
+
     /* ---------- มุมมองสำหรับมือถือ ---------- */
     @media (max-width: 700px) {
       body {
@@ -170,7 +211,7 @@
 </head>
 <body>
 
-<!-- เพลงพื้นหลัง (เปลี่ยน src ตามไฟล์จริงได้) -->
+<!-- เพลงพื้นหลัง (ใส่ไฟล์ bgm.mp3 ในโฟลเดอร์เดียวกับไฟล์นี้) -->
 <audio id="bgm" src="bgm.mp3" loop></audio>
 
 <div class="ui">
@@ -225,6 +266,74 @@ const touchBtns = document.querySelectorAll('.touch-btn');
 const leaderboardEl = document.getElementById('leaderboard');
 const lbModeText = document.getElementById('lbModeText');
 const bgm = document.getElementById('bgm'); // เพลงพื้นหลัง
+bgm.volume = 0.4;
+
+// ---------- WebAudio สำหรับเอฟเฟกต์เสียง ----------
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return; // บราวเซอร์เก่ามาก
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+}
+
+function playBeep(freq, duration, type = "sine") {
+  initAudio();
+  if (!audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+  gain.gain.setValueAtTime(0.22, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+function playEatSound() {
+  // เสียงกินแบบปิ๊บ ๆ
+  playBeep(880, 0.08, "square");
+}
+
+function playFreezeSound() {
+  // เสียงเก็บไอเท็ม
+  playBeep(1320, 0.12, "triangle");
+}
+
+function playGameOverSound() {
+  initAudio();
+  if (!audioCtx) return;
+  playBeep(260, 0.25, "sawtooth");
+  setTimeout(() => playBeep(180, 0.35, "sawtooth"), 180);
+}
+
+// ---------- เอฟเฟกต์ภาพ ----------
+function triggerCanvasFlash(className, duration = 180) {
+  canvas.classList.remove('eat-flash', 'freeze-flash', 'hit-flash');
+  // force reflow
+  void canvas.offsetWidth;
+  canvas.classList.add(className);
+  setTimeout(() => {
+    canvas.classList.remove(className);
+  }, duration);
+}
+
+function screenShake() {
+  canvas.classList.add('shake');
+  setTimeout(() => canvas.classList.remove('shake'), 300);
+}
 
 const GRID = 20;
 const COLS = canvas.width / GRID;
@@ -250,10 +359,13 @@ const difficultySettings = {
 // เริ่มเพลงหลัง user มี interaction
 function startBgm() {
   if (!bgmStarted) {
+    initAudio();
     bgm.play().catch(() => {
       // ถ้าเล่นไม่ได้เพราะ policy ของ browser ก็ไม่ error
     });
     bgmStarted = true;
+  } else {
+    initAudio();
   }
 }
 
@@ -515,6 +627,8 @@ function gameTick(){
   if (head.x === food.x && head.y === food.y){
     score += 10;
     scoreEl.textContent = score;
+    playEatSound();                   // เอฟเฟกต์เสียงกิน
+    triggerCanvasFlash('eat-flash');  // เอฟเฟกต์แสงตอนกิน
     placeFood();
 
     if(score >= nextFreezeScore && !freezeItem){
@@ -529,6 +643,8 @@ function gameTick(){
     freezeItem = null;
     monstersFrozen = true;
     freezeDuration = 50;
+    playFreezeSound();                    // เสียงเก็บไอเท็ม
+    triggerCanvasFlash('freeze-flash');   // แฟลชฟ้า
   }
 
   if(monstersFrozen){
@@ -552,6 +668,10 @@ function gameOver(){
   if (score > 0) {
     submitScore();
   }
+
+  playGameOverSound();           // เสียง Game Over
+  screenShake();                 // สั่นหน้าจอ
+  triggerCanvasFlash('hit-flash', 260); // แฟลชชมพูแรงๆ
 
   draw();
   ctx.fillStyle = "rgba(26,26,46,0.85)";

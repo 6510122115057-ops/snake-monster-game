@@ -150,21 +150,43 @@ function resetGame(){
 function spawnMonsters(){
   monster = [];
   const count = difficultySettings[difficulty].monsterCount;
+  const headPos = snake[0];
+  
   for(let i = 0; i < count; i++){
     let attempts = 0;
     while(attempts < 100){
-      const m = { 
-        x: Math.floor(Math.random()*COLS), 
-        y: Math.floor(Math.random()*ROWS) 
-      };
-      const headPos = snake[0];
+      // Spawn monsters in different quadrants to avoid overlap
+      let m;
+      if(i === 0) {
+        // Monster 1: spawn on left side
+        m = { 
+          x: Math.floor(Math.random() * (COLS/2)), 
+          y: Math.floor(Math.random() * ROWS) 
+        };
+      } else {
+        // Monster 2: spawn on right side
+        m = { 
+          x: Math.floor(COLS/2 + Math.random() * (COLS/2)), 
+          y: Math.floor(Math.random() * ROWS) 
+        };
+      }
+      
       const distanceFromSnake = Math.abs(m.x - headPos.x) + Math.abs(m.y - headPos.y);
       
-      // Make sure monster spawns away from snake and other monsters
+      // Check distance from other monsters
+      let farFromOthers = true;
+      for(let j = 0; j < monster.length; j++){
+        const dist = Math.abs(m.x - monster[j].x) + Math.abs(m.y - monster[j].y);
+        if(dist < 8) {
+          farFromOthers = false;
+          break;
+        }
+      }
+      
       if (!snake.some(s => s.x===m.x && s.y===m.y) && 
           (food.x !== m.x || food.y !== m.y) &&
-          !monster.some(mon => mon.x===m.x && mon.y===m.y) &&
-          distanceFromSnake > 5) {
+          distanceFromSnake > 5 &&
+          farFromOthers) {
         monster.push(m);
         break;
       }
@@ -197,43 +219,81 @@ function placeFreezeItem(){
 }
 
 function moveMonsters(){
-  if(monstersFrozen) return; // Don't move if frozen
+  if(monstersFrozen) return;
   
   monster.forEach((m, index) => {
     const head = snake[0];
     const dx = head.x - m.x;
     const dy = head.y - m.y;
     
-    // Different strategy for each monster in hard mode
+    // Check if monsters are too close to each other
+    let tooClose = false;
+    for(let i = 0; i < monster.length; i++){
+      if(i !== index) {
+        const dist = Math.abs(m.x - monster[i].x) + Math.abs(m.y - monster[i].y);
+        if(dist < 3) {
+          tooClose = true;
+          break;
+        }
+      }
+    }
+    
     if(difficulty === 'hard' && monster.length > 1) {
       if(index === 0) {
-        // Monster 1: Direct chase
-        if(Math.abs(dx) > Math.abs(dy)){
-          if(dx > 0) m.x++;
-          else m.x--;
+        // Monster 1: Aggressive direct chase
+        if(tooClose) {
+          // Move away from other monster while still approaching snake
+          if(Math.abs(dy) > 0) {
+            if(dy > 0) m.y++;
+            else m.y--;
+          } else if(Math.abs(dx) > 0) {
+            if(dx > 0) m.x++;
+            else m.x--;
+          }
         } else {
-          if(dy > 0) m.y++;
-          else m.y--;
+          // Normal chase
+          if(Math.abs(dx) > Math.abs(dy)){
+            if(dx > 0) m.x++;
+            else m.x--;
+          } else {
+            if(dy > 0) m.y++;
+            else m.y--;
+          }
         }
       } else {
-        // Monster 2: Try to cut off snake by going perpendicular
-        // Move perpendicular to snake's direction to flank
-        if(Math.abs(dir.x) > 0) {
-          // Snake moving horizontally, monster moves vertically to cut off
-          if(dy > 0) m.y++;
-          else if(dy < 0) m.y--;
-          else if(dx > 0) m.x++;
-          else m.x--;
+        // Monster 2: Smart flanking - predict where snake will be
+        const predictedX = head.x + dir.x * 4;
+        const predictedY = head.y + dir.y * 4;
+        
+        const predDx = predictedX - m.x;
+        const predDy = predictedY - m.y;
+        
+        if(tooClose) {
+          // Move perpendicular to avoid overlap
+          if(Math.abs(dir.x) > 0) {
+            if(predDy > 0) m.y++;
+            else if(predDy < 0) m.y--;
+            else if(Math.random() > 0.5) m.y++;
+            else m.y--;
+          } else {
+            if(predDx > 0) m.x++;
+            else if(predDx < 0) m.x--;
+            else if(Math.random() > 0.5) m.x++;
+            else m.x--;
+          }
         } else {
-          // Snake moving vertically, monster moves horizontally to cut off
-          if(dx > 0) m.x++;
-          else if(dx < 0) m.x--;
-          else if(dy > 0) m.y++;
-          else m.y--;
+          // Move to intercept predicted position
+          if(Math.abs(predDx) > Math.abs(predDy)){
+            if(predDx > 0) m.x++;
+            else m.x--;
+          } else {
+            if(predDy > 0) m.y++;
+            else m.y--;
+          }
         }
       }
     } else {
-      // Easy/Normal mode OR single monster: predict and chase
+      // Easy/Normal mode: predict and chase
       const predictedX = head.x + dir.x * 2;
       const predictedY = head.y + dir.y * 2;
       

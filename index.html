@@ -640,6 +640,18 @@ canvas.addEventListener('touchend', (e) => {
 restartBtn.addEventListener('click', resetGame);
 
 resetGame();
+
+  // Mobile button control
+document.querySelectorAll('.ctrl-btn').forEach(btn => {
+  btn.addEventListener('touchstart', () => {
+    const d = btn.dataset.dir;
+    if(d === "up" && dir.y !== 1) dir = {x:0,y:-1};
+    if(d === "down" && dir.y !== -1) dir = {x:0,y:1};
+    if(d === "left" && dir.x !== 1) dir = {x:-1,y:0};
+    if(d === "right" && dir.x !== -1) dir = {x:1,y:0};
+  });
+});
+  
 </script>
 
 <div class="touch-controls">

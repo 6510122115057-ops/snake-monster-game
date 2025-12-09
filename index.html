@@ -365,6 +365,37 @@ function updateHardMonstersByScore() {
     }
   }
 }
+function updateHardMonstersByScore() {
+  if (difficulty !== "hard") return;
+
+  let targetCount = 2;
+  if (score >= 800) targetCount = 4;
+  else if (score >= 400) targetCount = 3;
+
+  while (monster.length < targetCount) {
+    let m;
+    let attempts = 0;
+    while (attempts < 100) {
+      m = {
+        x: Math.floor(Math.random() * COLS),
+        y: Math.floor(Math.random() * ROWS),
+      };
+      const dist =
+        Math.abs(m.x - snake[0].x) +
+        Math.abs(m.y - snake[0].y);
+
+      if (
+        !snake.some(s => s.x === m.x && s.y === m.y) &&
+        !monster.some(o => o.x === m.x && o.y === m.y) &&
+        dist > 6
+      ) {
+        monster.push(m);
+        break;
+      }
+      attempts++;
+    }
+  }
+}
 
       if (!snake.some(s => s.x===m.x && s.y===m.y) &&
           (food.x !== m.x || food.y !== m.y) &&

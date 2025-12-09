@@ -361,6 +361,10 @@ function moveMonsters(){
   monster.forEach((m, index) => {
     const head = snake[0];
 
+    if (monstersFrozen) return;
+
+  monster.forEach((m, index) => {
+
     // ===== 1. ทำนายตำแหน่งในอนาคตของงู =====
     let predict = 2;
     if (difficulty === "hard") predict = 4;

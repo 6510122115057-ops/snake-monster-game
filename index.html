@@ -192,29 +192,57 @@ function placeFreezeItem(){
 function moveMonsters(){
   if(monstersFrozen) return; // Don't move if frozen
   
-  monster.forEach(m => {
+  monster.forEach((m, index) => {
     const head = snake[0];
     const dx = head.x - m.x;
     const dy = head.y - m.y;
     
-    // Calculate snake's direction to predict movement
-    const predictedX = head.x + dir.x * 2;
-    const predictedY = head.y + dir.y * 2;
-    
-    const predDx = predictedX - m.x;
-    const predDy = predictedY - m.y;
-    
-    // Use predicted position if snake is moving
-    const targetDx = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDx : dx;
-    const targetDy = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDy : dy;
-    
-    // Move towards predicted position
-    if(Math.abs(targetDx) > Math.abs(targetDy)){
-      if(targetDx > 0) m.x++;
-      else m.x--;
+    // Different strategy for each monster in hard mode
+    if(difficulty === 'hard' && monster.length > 1) {
+      if(index === 0) {
+        // Monster 1: Direct chase
+        if(Math.abs(dx) > Math.abs(dy)){
+          if(dx > 0) m.x++;
+          else m.x--;
+        } else {
+          if(dy > 0) m.y++;
+          else m.y--;
+        }
+      } else {
+        // Monster 2: Try to cut off snake by going perpendicular
+        // Move perpendicular to snake's direction to flank
+        if(Math.abs(dir.x) > 0) {
+          // Snake moving horizontally, monster moves vertically to cut off
+          if(dy > 0) m.y++;
+          else if(dy < 0) m.y--;
+          else if(dx > 0) m.x++;
+          else m.x--;
+        } else {
+          // Snake moving vertically, monster moves horizontally to cut off
+          if(dx > 0) m.x++;
+          else if(dx < 0) m.x--;
+          else if(dy > 0) m.y++;
+          else m.y--;
+        }
+      }
     } else {
-      if(targetDy > 0) m.y++;
-      else m.y--;
+      // Easy/Normal mode OR single monster: predict and chase
+      const predictedX = head.x + dir.x * 2;
+      const predictedY = head.y + dir.y * 2;
+      
+      const predDx = predictedX - m.x;
+      const predDy = predictedY - m.y;
+      
+      const targetDx = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDx : dx;
+      const targetDy = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDy : dy;
+      
+      if(Math.abs(targetDx) > Math.abs(targetDy)){
+        if(targetDx > 0) m.x++;
+        else m.x--;
+      } else {
+        if(targetDy > 0) m.y++;
+        else m.y--;
+      }
     }
     
     m.x = (m.x + COLS) % COLS;

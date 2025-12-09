@@ -139,6 +139,7 @@
       margin: 4px 0 0 0;
       max-height: 150px;
       overflow-y: auto;
+      font-size: 13px;
     }
   </style>
 </head>
@@ -188,7 +189,6 @@
 
 <script>
 /* ====== CONFIG ====== */
-// แก้ URL ตรงนี้ถ้า backend คุณชื่ออย่างอื่น
 const SCORE_API_BASE = "https://snake-scoreboard-backend.onrender.com/api";
 
 const canvas = document.getElementById('game');
@@ -224,8 +224,9 @@ const difficultySettings = {
 async function loadLeaderboard() {
   try {
     lbModeText.textContent = difficulty;
-    const res = await fetch(${SCORE_API_BASE}/scores/top?mode=${difficulty});
+    const res = await fetch(`${SCORE_API_BASE}/scores/top?mode=${difficulty}`);
     const data = await res.json();
+
     leaderboardEl.innerHTML = "";
     if (!Array.isArray(data) || data.length === 0) {
       const li = document.createElement("li");
@@ -235,7 +236,7 @@ async function loadLeaderboard() {
     }
     data.forEach((row) => {
       const li = document.createElement("li");
-      li.textContent = ${row.name} — ${row.score};
+      li.textContent = `${row.name} — ${row.score}`;
       leaderboardEl.appendChild(li);
     });
   } catch (e) {
@@ -253,7 +254,7 @@ async function submitScore() {
       localStorage.setItem("snakePlayerName", name);
     }
 
-    await fetch(${SCORE_API_BASE}/scores, {
+    await fetch(`${SCORE_API_BASE}/scores`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, score, mode: difficulty }),
@@ -315,7 +316,7 @@ function spawnMonsters(){
       let farFromOthers = true;
       for(let j = 0; j < monster.length; j++){
         const dist = Math.abs(m.x - monster[j].x) + Math.abs(m.y - monster[j].y);
-        if(dist < 😎 {
+        if(dist < 8) {
           farFromOthers = false;
           break;
         }

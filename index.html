@@ -322,7 +322,19 @@ function spawnMonsters(){
         }
       }
 
-      function updateHardMonstersByScore() {
+      if (!snake.some(s => s.x===m.x && s.y===m.y) &&
+          (food.x !== m.x || food.y !== m.y) &&
+          distanceFromSnake > 5 &&
+          farFromOthers) {
+        monster.push(m);
+        break;
+      }
+      attempts++;
+    }
+  }
+}
+
+function updateHardMonstersByScore() {
   if (difficulty !== "hard") return;
 
   let targetCount = 2;

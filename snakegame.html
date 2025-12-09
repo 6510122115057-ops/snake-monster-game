@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<title>Snake Game with Monster</title>
+<style>
+  body { 
+    display:flex; 
+    align-items:center; 
+    justify-content:center; 
+    height:100vh; 
+    margin:0; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color:#fff; 
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  #game { 
+    background:#1a1a2e; 
+    image-rendering:pixelated; 
+    border-radius:12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .ui { 
+    position:fixed; 
+    top:20px; 
+    left:20px; 
+    color:#fff; 
+    font-size:18px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  .difficulty {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+  }
+  .diff-btn {
+    margin: 5px 5px 0 0;
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.2);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+  }
+  .diff-btn:hover {
+    background: rgba(255,255,255,0.3);
+  }
+  .diff-btn.active {
+    background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    border-color: #4ecdc4;
+    box-shadow: 0 0 15px rgba(78,205,196,0.5);
+  }
+  button#restart { 
+    margin-top:10px; 
+    padding:8px 16px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border:none;
+    border-radius:8px;
+    color:#fff;
+    font-weight:bold;
+    cursor:pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-size:14px;
+    width: 100%;
+  }
+  button#restart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245,87,108,0.4);
+  }
+  button#restart:active {
+    transform: translateY(0);
+  }
+</style>
+</head>
+<body>
+<div class="ui">
+  Score: <span id="score">0</span><br>
+  High Score: <span id="highScore">0</span>
+  <div class="difficulty">
+    <div style="font-size:14px; margin-bottom:5px;">Difficulty:</div>
+    <button class="diff-btn active" data-level="easy">Easy</button>
+    <button class="diff-btn" data-level="normal">Normal</button>
+    <button class="diff-btn" data-level="hard">Hard</button>
+  </div>
+  <button id="restart">Restart</button>
+</div>
+
+<canvas id="game" width="400" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('highScore');
+const restartBtn = document.getElementById('restart');
+const diffBtns = document.querySelectorAll('.diff-btn');
+
+const GRID = 20;
+const COLS = canvas.width / GRID;
+const ROWS = canvas.height / GRID;
+
+let snake, dir, food, monster, running, score, tickInterval, monsterMoveCounter;
+let difficulty = 'easy';
+let highScore = 0;
+let freezeItem = null;
+let monstersFrozen = false;
+let freezeDuration = 0;
+let nextFreezeScore = 100;
+highScoreEl.textContent = highScore;
+
+const difficultySettings = {
+  easy: { snakeSpeed: 100, monsterMoveInterval: 4, monsterCount: 1 },
+  normal: { snakeSpeed: 80, monsterMoveInterval: 3, monsterCount: 1 },
+  hard: { snakeSpeed: 70, monsterMoveInterval: 2, monsterCount: 2 }
+};
+
+diffBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    diffBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.level;
+    resetGame();
+  });
+});
+
+function resetGame(){
+  snake = [{x: Math.floor(COLS/2), y: Math.floor(ROWS/2)}];
+  dir = {x:1, y:0};
+  placeFood();
+  spawnMonsters();
+  freezeItem = null;
+  monstersFrozen = false;
+  freezeDuration = 0;
+  score = 0;
+  nextFreezeScore = 100;
+  scoreEl.textContent = score;
+  running = true;
+  monsterMoveCounter = 0;
+  clearInterval(tickInterval);
+  tickInterval = setInterval(gameTick, difficultySettings[difficulty].snakeSpeed);
+}
+
+function spawnMonsters(){
+  monster = [];
+  const count = difficultySettings[difficulty].monsterCount;
+  for(let i = 0; i < count; i++){
+    while(true){
+      const m = { 
+        x: Math.floor(Math.random()*COLS), 
+        y: Math.floor(Math.random()*ROWS) 
+      };
+      if (!snake.some(s => s.x===m.x && s.y===m.y) && 
+          (food.x !== m.x || food.y !== m.y) &&
+          !monster.some(mon => mon.x===m.x && mon.y===m.y)) {
+        monster.push(m);
+        break;
+      }
+    }
+  }
+}
+
+function placeFood(){
+  while(true){
+    const f = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+    if (!snake.some(s => s.x===f.x && s.y===f.y) && 
+        (!freezeItem || (f.x !== freezeItem.x || f.y !== freezeItem.y))) { 
+      food = f; 
+      break; 
+    }
+  }
+}
+
+function placeFreezeItem(){
+  while(true){
+    const f = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+    if (!snake.some(s => s.x===f.x && s.y===f.y) && 
+        (f.x !== food.x || f.y !== food.y) &&
+        !monster.some(m => m.x===f.x && m.y===f.y)) { 
+      freezeItem = f; 
+      break; 
+    }
+  }
+}
+
+function moveMonsters(){
+  if(monstersFrozen) return; // Don't move if frozen
+  
+  monster.forEach(m => {
+    const head = snake[0];
+    const dx = head.x - m.x;
+    const dy = head.y - m.y;
+    
+    if(Math.abs(dx) > Math.abs(dy)){
+      if(dx > 0) m.x++;
+      else m.x--;
+    } else {
+      if(dy > 0) m.y++;
+      else m.y--;
+    }
+    
+    m.x = (m.x + COLS) % COLS;
+    m.y = (m.y + ROWS) % ROWS;
+  });
+}
+
+function gameTick(){
+  if(!running) return;
+
+  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+  head.x = (head.x + COLS) % COLS;
+  head.y = (head.y + ROWS) % ROWS;
+
+  // Check collision with self
+  if (snake.some(s => s.x===head.x && s.y===head.y)) {
+    gameOver();
+    return;
+  }
+
+  // Check collision with monster
+  if (monster.some(m => m.x===head.x && m.y===head.y)) {
+    gameOver();
+    return;
+  }
+
+  snake.unshift(head);
+
+  if (head.x === food.x && head.y === food.y){
+    score += 10;
+    scoreEl.textContent = score;
+    placeFood();
+    
+    // Spawn freeze item every 100 points
+    if(score >= nextFreezeScore && !freezeItem){
+      placeFreezeItem();
+      nextFreezeScore += 100;
+    }
+  } else {
+    snake.pop();
+  }
+
+  // Check if collected freeze item
+  if(freezeItem && head.x === freezeItem.x && head.y === freezeItem.y){
+    freezeItem = null;
+    monstersFrozen = true;
+    freezeDuration = 50; // Freeze for ~5 seconds
+  }
+
+  // Update freeze duration
+  if(monstersFrozen){
+    freezeDuration--;
+    if(freezeDuration <= 0){
+      monstersFrozen = false;
+    }
+  }
+
+  // Move monsters at slower intervals
+  monsterMoveCounter++;
+  if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
+    moveMonsters();
+    monsterMoveCounter = 0;
+  }
+
+  draw();
+}
+
+function gameOver(){
+  running = false;
+  if (score > highScore) {
+    highScore = score;
+    highScoreEl.textContent = highScore;
+  }
+
+  draw(); 
+  ctx.fillStyle = "rgba(26,26,46,0.85)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = "#f5576c";
+  ctx.fillText("Game Over!", canvas.width/2, canvas.height/2 - 20);
+  ctx.font = "18px sans-serif";
+  ctx.shadowBlur = 0;
+  ctx.fillText("Press Restart to play again", canvas.width/2, canvas.height/2 + 20);
+}
+
+function draw(){
+  ctx.fillStyle = "#1a1a2e";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Food with glow effect
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = "#ff6b6b";
+  ctx.fillStyle = "#ff6b6b";
+  ctx.beginPath();
+  ctx.arc(food.x*GRID+GRID/2, food.y*GRID+GRID/2, GRID/2-2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Freeze item (snowflake icon)
+  if(freezeItem){
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "#00d4ff";
+    ctx.fillStyle = "#00d4ff";
+    ctx.beginPath();
+    ctx.arc(freezeItem.x*GRID+GRID/2, freezeItem.y*GRID+GRID/2, GRID/2-2, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Draw snowflake pattern
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    const cx = freezeItem.x*GRID+GRID/2;
+    const cy = freezeItem.y*GRID+GRID/2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-5);
+    ctx.lineTo(cx, cy+5);
+    ctx.moveTo(cx-5, cy);
+    ctx.lineTo(cx+5, cy);
+    ctx.moveTo(cx-3, cy-3);
+    ctx.lineTo(cx+3, cy+3);
+    ctx.moveTo(cx-3, cy+3);
+    ctx.lineTo(cx+3, cy-3);
+    ctx.stroke();
+  }
+
+  // Monster with spooky effect
+  monster.forEach(m => {
+    // If frozen, add ice effect
+    if(monstersFrozen){
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = "#00d4ff";
+      ctx.fillStyle = "#00d4ff";
+    } else {
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = "#ff0066";
+      ctx.fillStyle = "#ff0066";
+    }
+    
+    // Draw monster body
+    ctx.beginPath();
+    ctx.arc(m.x*GRID+GRID/2, m.y*GRID+GRID/2, GRID/2-1, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Draw eyes
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = monstersFrozen ? "#fff" : "#fff";
+    ctx.beginPath();
+    ctx.arc(m.x*GRID+GRID/2-3, m.y*GRID+GRID/2-2, 2, 0, Math.PI*2);
+    ctx.arc(m.x*GRID+GRID/2+3, m.y*GRID+GRID/2-2, 2, 0, Math.PI*2);
+    ctx.fill();
+  });
+  
+  ctx.shadowBlur = 0;
+
+  // Snake with gradient
+  for(let i=0;i<snake.length;i++){
+    const gradient = ctx.createLinearGradient(snake[i].x*GRID, snake[i].y*GRID, 
+                                               snake[i].x*GRID+GRID, snake[i].y*GRID+GRID);
+    if(i===0) {
+      gradient.addColorStop(0, "#4ecdc4");
+      gradient.addColorStop(1, "#44a08d");
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#4ecdc4";
+    } else {
+      gradient.addColorStop(0, "#667eea");
+      gradient.addColorStop(1, "#764ba2");
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = "#667eea";
+    }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(snake[i].x*GRID+1, snake[i].y*GRID+1, GRID-2, GRID-2);
+  }
+  ctx.shadowBlur = 0;
+}
+
+window.addEventListener('keydown', (e) => {
+  const key = e.key;
+  if ((key === 'ArrowUp' || key === 'w') && dir.y !== 1) dir = {x:0,y:-1};
+  if ((key === 'ArrowDown' || key === 's') && dir.y !== -1) dir = {x:0,y:1};
+  if ((key === 'ArrowLeft' || key === 'a') && dir.x !== 1) dir = {x:-1,y:0};
+  if ((key === 'ArrowRight' || key === 'd') && dir.x !== -1) dir = {x:1,y:0};
+});
+
+restartBtn.addEventListener('click', resetGame);
+
+resetGame();
+</script>
+</body>
+</html>

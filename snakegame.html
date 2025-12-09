@@ -687,6 +687,93 @@ function gameOver(){
   ctx.fillText("Press Restart to play again", canvas.width/2, canvas.height/2 + 20);
 }
 
+function drawMonster(m) {
+  const cx = m.x * GRID + GRID / 2;
+  const cy = m.y * GRID + GRID / 2;
+  const r  = GRID / 2 - 1;
+
+  // ----- ตัวมอนสเตอร์ (ไล่สีให้ดูดาร์ก/น่ากลัว) -----
+  let gradient = ctx.createRadialGradient(
+    cx, cy - 2, r / 4,
+    cx, cy, r
+  );
+
+  if (monstersFrozen) {
+    gradient.addColorStop(0, "#e0faff");
+    gradient.addColorStop(1, "#00aaff");
+    ctx.shadowColor = "#00d4ff";
+    ctx.shadowBlur  = 25;
+  } else {
+    gradient.addColorStop(0, "#ff99aa");
+    gradient.addColorStop(1, "#440011");
+    ctx.shadowColor = "#ff0033";
+    ctx.shadowBlur  = 22;
+  }
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // ----- เขาสองข้าง -----
+  ctx.fillStyle = "#fdfdfd";
+  ctx.beginPath();
+  ctx.moveTo(cx - r / 2, cy - r / 3);
+  ctx.lineTo(cx - r / 3, cy - r * 1.1);
+  ctx.lineTo(cx - r / 6, cy - r / 4);
+  ctx.closePath();
+  ctx.moveTo(cx + r / 2, cy - r / 3);
+  ctx.lineTo(cx + r / 3, cy - r * 1.1);
+  ctx.lineTo(cx + r / 6, cy - r / 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // ----- ตาที่มองตามหัวงู -----
+  const head = snake[0] || { x: m.x, y: m.y };
+  const dx = head.x - m.x;
+  const dy = head.y - m.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const pupilOffsetX = (dx / len) * 2;
+  const pupilOffsetY = (dy / len) * 2;
+
+  const eyeY = cy - r / 4;
+
+  // ตาขาว
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.ellipse(cx - 4, eyeY, 4, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + 4, eyeY, 4, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // รูม่านตา
+  ctx.fillStyle = "#111111";
+  ctx.beginPath();
+  ctx.arc(cx - 4 + pupilOffsetX, eyeY + pupilOffsetY, 1.5, 0, Math.PI * 2);
+  ctx.arc(cx + 4 + pupilOffsetX, eyeY + pupilOffsetY, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ----- ปากโค้ง + เขี้ยว -----
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.arc(cx, cy + 4, r / 2, 0, Math.PI);
+  ctx.stroke();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  // เขี้ยวซ้าย
+  ctx.moveTo(cx - 3, cy + 4);
+  ctx.lineTo(cx - 2, cy + 9);
+  ctx.lineTo(cx - 1, cy + 4);
+  // เขี้ยวขวา
+  ctx.moveTo(cx + 3, cy + 4);
+  ctx.lineTo(cx + 2, cy + 9);
+  ctx.lineTo(cx + 1, cy + 4);
+  ctx.closePath();
+  ctx.fill();
+}
+  
 function draw(){
   ctx.fillStyle = "#1a1a2e";
   ctx.fillRect(0,0,canvas.width,canvas.height);

@@ -10,18 +10,28 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      height:100vh;
+      min-height:100vh;
       margin:0;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color:#fff;
       font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      box-sizing: border-box;
     }
+
+    * {
+      box-sizing: inherit;
+    }
+
     #game {
       background:#1a1a2e;
       image-rendering:pixelated;
       border-radius:12px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      /* ทำให้ canvas ย่อ/ขยายตามหน้าจอ แต่ยังเป็นสี่เหลี่ยมจัตุรัส */
+      width: min(90vw, 400px);
+      height: min(90vw, 400px);
     }
+
     .ui {
       position:fixed;
       top:20px;
@@ -35,6 +45,7 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.2);
       max-width: 280px;
     }
+
     .difficulty {
       margin-top: 10px;
       padding-top: 10px;
@@ -98,12 +109,6 @@
       gap: 8px;
     }
 
-    @media (min-width: 700px) {
-      .touch-controls-wrapper {
-        display:none;
-      }
-    }
-
     .touch-controls-row {
       display: flex;
       gap: 8px;
@@ -122,6 +127,7 @@
       cursor: pointer;
       box-shadow: 0 4px 14px rgba(0,0,0,0.35);
       transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+      touch-action: manipulation;
     }
 
     .touch-btn:active {
@@ -136,6 +142,29 @@
       max-height: 150px;
       overflow-y: auto;
       font-size: 13px;
+    }
+
+    /* ---------- มุมมองสำหรับมือถือ ---------- */
+    @media (max-width: 700px) {
+      body {
+        justify-content:flex-start;
+        padding-top: 80px;
+        padding-bottom: 140px; /* เว้นที่ให้ปุ่มจอยสติ๊ก */
+      }
+
+      .ui {
+        position: static;
+        margin: 0 16px 16px;
+        width: calc(100% - 32px);
+        max-width: 420px;
+      }
+
+      .touch-controls-wrapper {
+        bottom: 24px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
     }
   </style>
 </head>

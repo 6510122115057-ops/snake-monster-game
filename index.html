@@ -197,11 +197,23 @@ function moveMonsters(){
     const dx = head.x - m.x;
     const dy = head.y - m.y;
     
-    if(Math.abs(dx) > Math.abs(dy)){
-      if(dx > 0) m.x++;
+    // Calculate snake's direction to predict movement
+    const predictedX = head.x + dir.x * 2;
+    const predictedY = head.y + dir.y * 2;
+    
+    const predDx = predictedX - m.x;
+    const predDy = predictedY - m.y;
+    
+    // Use predicted position if snake is moving
+    const targetDx = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDx : dx;
+    const targetDy = Math.abs(dir.x) > 0 || Math.abs(dir.y) > 0 ? predDy : dy;
+    
+    // Move towards predicted position
+    if(Math.abs(targetDx) > Math.abs(targetDy)){
+      if(targetDx > 0) m.x++;
       else m.x--;
     } else {
-      if(dy > 0) m.y++;
+      if(targetDy > 0) m.y++;
       else m.y--;
     }
     

@@ -91,6 +91,13 @@
   z-index: 9999;
 }
 
+  /* ซ่อนจอยเมื่อเป็นจอใหญ่ (PC, Laptop) */
+@media (min-width: 700px) {
+  .touch-controls {
+    display: none;
+  }
+}
+
   .touch-controls-row {
     display: flex;
     gap: 8px;
@@ -607,4 +614,5 @@ resetGame();
 </script>
 </body>
 </html>
+
 

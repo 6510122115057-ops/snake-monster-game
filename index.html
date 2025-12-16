@@ -406,6 +406,7 @@ let particles = [];
 let floatingTexts = [];
 let nextMonsterRespawnScore = 100;
 let deathReason = "";
+let fearShake = 0; // งูขี้กลัว
 
 highScoreEl.textContent = highScore;
 
@@ -766,6 +767,13 @@ function gameTick(){
     nextMonsterRespawnScore += 100;
     }
 
+        // ===== ตรวจว่างูกลัวไหม (มอนอยู่ใกล้หัวงู) =====
+    fearShake = 0;
+    monster.forEach(m => {
+    const d = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
+    if (d < 4) fearShake = 1;
+    });
+
     updateEffects();
     draw();
 }
@@ -902,25 +910,57 @@ function draw(){
 
   ctx.shadowBlur = 0;
 
-  for(let i=0;i<snake.length;i++){
-    const gradient = ctx.createLinearGradient(
-      snake[i].x*GRID, snake[i].y*GRID,
-      snake[i].x*GRID+GRID, snake[i].y*GRID+GRID
-    );
-    if(i===0) {
-      gradient.addColorStop(0, "#4ecdc4");
-      gradient.addColorStop(1, "#44a08d");
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#4ecdc4";
-    } else {
-      gradient.addColorStop(0, "#667eea");
-      gradient.addColorStop(1, "#764ba2");
-      ctx.shadowBlur = 5;
-      ctx.shadowColor = "#667eea";
-    }
-    ctx.fillStyle = gradient;
-    ctx.fillRect(snake[i].x*GRID+1, snake[i].y*GRID+1, GRID-2, GRID-2);
+  for (let i = 0; i < snake.length; i++) {
+  const sx = snake[i].x * GRID;
+  const sy = snake[i].y * GRID;
+
+  // สั่นเฉพาะหัวตอนกลัว
+  const shakeX = fearShake && i === 0 ? (Math.random() - 0.5) * 2 : 0;
+  const shakeY = fearShake && i === 0 ? (Math.random() - 0.5) * 2 : 0;
+
+  // ===== ลำตัวงู =====
+  const bodyGrad = ctx.createLinearGradient(sx, sy, sx + GRID, sy + GRID);
+  bodyGrad.addColorStop(0, "#c7ede6");
+  bodyGrad.addColorStop(1, "#9fd3c7");
+
+  ctx.fillStyle = bodyGrad;
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = "#9fd3c7";
+  ctx.fillRect(
+    sx + 2 + shakeX,
+    sy + 2 + shakeY,
+    GRID - 4,
+    GRID - 4
+  );
+  ctx.shadowBlur = 0;
+
+  // ===== หัวงู (หน้าเหวอ) =====
+  if (i === 0) {
+    const cx = sx + GRID / 2 + shakeX;
+    const cy = sy + GRID / 2 + shakeY;
+
+    // ตาขาว
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy - 3, 4, 0, Math.PI * 2);
+    ctx.arc(cx + 4, cy - 3, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // รูม่าน (กลัว = เล็ก)
+    ctx.fillStyle = "#333";
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy - 3, fearShake ? 1.5 : 2.5, 0, Math.PI * 2);
+    ctx.arc(cx + 4, cy - 3, fearShake ? 1.5 : 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ปากตกใจ
+    ctx.strokeStyle = "#555";
+    ctx.beginPath();
+    ctx.arc(cx, cy + 4, 5, 0, Math.PI);
+    ctx.stroke();
   }
+}
+
   ctx.shadowBlur = 0;
 
   // ❄️ Ice particles

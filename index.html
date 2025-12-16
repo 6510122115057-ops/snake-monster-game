@@ -405,6 +405,7 @@ let bgmStarted = false; // กันเล่นเพลงซ้ำตอน�
 let particles = [];
 let floatingTexts = [];
 let nextMonsterRespawnScore = 100;
+let deathReason = "";
 
 highScoreEl.textContent = highScore;
 
@@ -499,6 +500,7 @@ function resetGame(){
   clearInterval(tickInterval);
   tickInterval = setInterval(gameTick, difficultySettings[difficulty].snakeSpeed);
   loadLeaderboard();
+  deathReason = "";
 
   particles = [];
 floatingTexts = [];
@@ -683,9 +685,10 @@ function gameTick(){
   head.y = (head.y + ROWS) % ROWS;
 
   if (snake.some(s => s.x===head.x && s.y===head.y)) {
-    gameOver();
-    return;
-  }
+  deathReason = "ชนตัวเอง";
+  gameOver();
+  return;
+}
 
     for (let i = monster.length - 1; i >= 0; i--) {
     if (monster[i].x === head.x && monster[i].y === head.y) {
@@ -703,6 +706,7 @@ function gameTick(){
         screenShake();
         playFreezeSound();
         } else {
+        deathReason = "โดนมอนสเตอร์จับได้";
         gameOver();
         return;
         }
@@ -710,17 +714,18 @@ function gameTick(){
     }
 
   monsterMoveCounter++;
-  if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
-    moveMonsters();
-    monsterMoveCounter = 0;
+    if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
+        moveMonsters();
+        monsterMoveCounter = 0;
 
-    for(let i = 0; i < monster.length; i++){
-      if(monster[i].x === head.x && monster[i].y === head.y){
+        for (let i = 0; i < monster.length; i++) {
+    if (monster[i].x === head.x && monster[i].y === head.y) {
+        deathReason = "มอนสเตอร์พุ่งชน";
         gameOver();
         return;
-      }
     }
   }
+}
 
   snake.unshift(head);
 
@@ -788,10 +793,24 @@ function gameOver(){
   ctx.textAlign = "center";
   ctx.shadowBlur = 10;
   ctx.shadowColor = "#f5576c";
-  ctx.fillText("Game Over!", canvas.width/2, canvas.height/2 - 20);
-  ctx.font = "18px sans-serif";
-  ctx.shadowBlur = 0;
-  ctx.fillText("Press Restart to play again", canvas.width/2, canvas.height/2 + 20);
+  ctx.fillText("Game Over!", canvas.width/2, canvas.height/2 - 40);
+
+ctx.font = "18px sans-serif";
+ctx.fillStyle = "#ffd6e0";
+ctx.fillText(
+  deathReason ? `สาเหตุ: ${deathReason}` : "",
+  canvas.width/2,
+  canvas.height/2
+);
+
+ctx.fillStyle = "#fff";
+ctx.font = "16px sans-serif";
+ctx.fillText(
+  "Press Restart to play again",
+  canvas.width/2,
+  canvas.height/2 + 30
+);
+
 }
 
 function drawMonster(m) {

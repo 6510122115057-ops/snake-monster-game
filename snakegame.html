@@ -253,6 +253,31 @@
     <button class="diff-btn" data-level="hard">Hard</button>
   </div>
   <button id="restart">Restart</button>
+  <div style="margin-top:12px; font-size:14px;">
+  <b>Sound</b><br>
+
+  <button id="toggleMusic"
+    style="
+      margin-top:6px;
+      width:100%;
+      padding:6px;
+      border:none;
+      border-radius:6px;
+      background:rgba(255,255,255,0.2);
+      color:#fff;
+      cursor:pointer;
+    ">
+    🔊 Music: ON
+  </button>
+
+  <input id="volumeControl"
+    type="range"
+    min="0"
+    max="100"
+    value="40"
+    style="width:100%; margin-top:6px;">
+</div>
+
 </div>
 
 <canvas id="game" width="600" height="600"></canvas>
@@ -281,6 +306,8 @@ const touchBtns = document.querySelectorAll('.touch-btn');
 const leaderboardEl = document.getElementById('leaderboard');
 const lbModeText = document.getElementById('lbModeText');
 const bgm = document.getElementById('bgm'); // เพลงพื้นหลัง
+const toggleMusicBtn = document.getElementById('toggleMusic');
+const volumeControl = document.getElementById('volumeControl');
 bgm.volume = 0.4;
 
 // ---------- WebAudio สำหรับเอฟเฟกต์เสียง ----------
@@ -296,6 +323,24 @@ function initAudio() {
     audioCtx.resume();
   }
 }
+
+toggleMusicBtn.addEventListener('click', () => {
+  musicEnabled = !musicEnabled;
+
+  if (musicEnabled) {
+    bgm.volume = volumeControl.value / 100;
+    bgm.play().catch(() => {});
+    toggleMusicBtn.textContent = "🔊 Music: ON";
+  } else {
+    bgm.pause();
+    toggleMusicBtn.textContent = "🔇 Music: OFF";
+  }
+});
+
+volumeControl.addEventListener('input', () => {
+  bgm.volume = volumeControl.value / 100;
+});
+
 
 function playBeep(freq, duration, type = "sine") {
   initAudio();
@@ -402,6 +447,7 @@ let monstersFrozen = false;
 let freezeDuration = 0;
 let nextFreezeScore = 100;
 let bgmStarted = false; // กันเล่นเพลงซ้ำตอนเริ่ม
+let musicEnabled = true;
 let particles = [];
 let floatingTexts = [];
 let nextMonsterRespawnScore = 100;
@@ -419,11 +465,12 @@ const difficultySettings = {
 
 // เริ่มเพลงหลัง user มี interaction
 function startBgm() {
+  if (!musicEnabled) return;
+
   if (!bgmStarted) {
     initAudio();
-    bgm.play().catch(() => {
-      // ถ้าเล่นไม่ได้เพราะ policy ของ browser ก็ไม่ error
-    });
+    bgm.volume = volumeControl.value / 100;
+    bgm.play().catch(() => {});
     bgmStarted = true;
   } else {
     initAudio();

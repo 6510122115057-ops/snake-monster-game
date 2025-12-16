@@ -27,10 +27,12 @@
       image-rendering:pixelated;
       border-radius:12px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-      width: min(90vw, 400px);
-      height: min(90vw, 400px);
-      transition: box-shadow 0.15s ease;
-    }
+      width: min(80vh, 70vw);
+      height: min(80vh, 70vw);
+
+      max-width: 600px;
+      max-height: 600px;
+}
 
     .ui {
       position:fixed;
@@ -208,6 +210,16 @@
       }
     }
   </style>
+
+  @media (min-width: 1024px) {
+  #game {
+    width: 70vh;
+    height: 70vh;
+    max-width: 700px;
+    max-height: 700px;
+  }
+}
+
 </head>
 <body>
 
@@ -240,7 +252,7 @@
   <button id="restart">Restart</button>
 </div>
 
-<canvas id="game" width="400" height="400"></canvas>
+<canvas id="game" width="600" height="600"></canvas>
 
 <div class="touch-controls-wrapper">
   <div class="touch-controls">
@@ -335,6 +347,46 @@ function screenShake() {
   setTimeout(() => canvas.classList.remove('shake'), 300);
 }
 
+function spawnIceExplosion(x, y) {
+  const cx = x * GRID + GRID / 2;
+  const cy = y * GRID + GRID / 2;
+
+  for (let i = 0; i < 16; i++) {
+    particles.push({
+      x: cx,
+      y: cy,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6,
+      life: 30
+    });
+  }
+}
+
+function spawnFloatingText(x, y, text) {
+  floatingTexts.push({
+    x: x * GRID + GRID / 2,
+    y: y * GRID + GRID / 2,
+    text,
+    life: 40
+  });
+}
+
+function updateEffects() {
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2;
+    p.life--;
+  });
+  particles = particles.filter(p => p.life > 0);
+
+  floatingTexts.forEach(t => {
+    t.y -= 0.6;
+    t.life--;
+  });
+  floatingTexts = floatingTexts.filter(t => t.life > 0);
+}
+
 const GRID = 20;
 const COLS = canvas.width / GRID;
 const ROWS = canvas.height / GRID;
@@ -347,6 +399,9 @@ let monstersFrozen = false;
 let freezeDuration = 0;
 let nextFreezeScore = 100;
 let bgmStarted = false; // กันเล่นเพลงซ้ำตอนเริ่ม
+let particles = [];
+let floatingTexts = [];
+let nextMonsterRespawnScore = 100;
 
 highScoreEl.textContent = highScore;
 
@@ -441,6 +496,11 @@ function resetGame(){
   clearInterval(tickInterval);
   tickInterval = setInterval(gameTick, difficultySettings[difficulty].snakeSpeed);
   loadLeaderboard();
+
+  particles = [];
+floatingTexts = [];
+nextMonsterRespawnScore = 100;
+
 }
 
 function spawnMonsters(){
@@ -477,6 +537,28 @@ function spawnMonsters(){
       }
       attempts++;
     }
+  }
+}
+
+function spawnExtraMonster() {
+  let attempts = 0;
+  while (attempts < 100) {
+    const m = {
+      x: Math.floor(Math.random() * COLS),
+      y: Math.floor(Math.random() * ROWS),
+    };
+
+    const dist = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
+
+    if (
+      !snake.some(s => s.x === m.x && s.y === m.y) &&
+      !monster.some(o => o.x === m.x && o.y === m.y) &&
+      dist > 6
+    ) {
+      monster.push(m);
+      break;
+    }
+    attempts++;
   }
 }
 
@@ -602,12 +684,27 @@ function gameTick(){
     return;
   }
 
-  for(let i = 0; i < monster.length; i++){
-    if(monster[i].x === head.x && monster[i].y === head.y){
-      gameOver();
-      return;
+    for (let i = monster.length - 1; i >= 0; i--) {
+    if (monster[i].x === head.x && monster[i].y === head.y) {
+
+        if (monstersFrozen) {
+        const killed = monster[i];
+        monster.splice(i, 1);
+
+        score += 20;
+        scoreEl.textContent = score;
+
+        spawnIceExplosion(killed.x, killed.y);     // ❄️ แตกน้ำแข็ง
+        spawnFloatingText(killed.x, killed.y, "+20"); // ✨ คะแนนลอย
+        triggerCanvasFlash('freeze-flash', 200);
+        screenShake();
+        playFreezeSound();
+        } else {
+        gameOver();
+        return;
+        }
     }
-  }
+    }
 
   monsterMoveCounter++;
   if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
@@ -654,8 +751,15 @@ function gameTick(){
     }
   }
   
-  updateHardMonstersByScore();
-  draw();
+    updateHardMonstersByScore();
+
+    if (score >= nextMonsterRespawnScore) {
+    spawnExtraMonster();
+    nextMonsterRespawnScore += 100;
+    }
+
+    updateEffects();
+    draw();
 }
 
 function gameOver(){
@@ -852,6 +956,23 @@ function draw(){
     ctx.fillRect(snake[i].x*GRID+1, snake[i].y*GRID+1, GRID-2, GRID-2);
   }
   ctx.shadowBlur = 0;
+
+  // ❄️ Ice particles
+particles.forEach(p => {
+  ctx.fillStyle = "rgba(0,212,255,0.9)";
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+  ctx.fill();
+});
+
+// ✨ Floating score
+floatingTexts.forEach(t => {
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(t.text, t.x, t.y);
+});
+
 }
 
 function setDirection(d){

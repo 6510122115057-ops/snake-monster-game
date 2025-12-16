@@ -818,31 +818,49 @@ function drawMonster(m) {
   const cy = m.y * GRID + GRID / 2;
   const r = GRID / 2 - 1;
 
-  ctx.shadowBlur = 22;
+  // ===== ตาขาว =====
+  ctx.shadowBlur = monstersFrozen ? 25 : 20;
   ctx.shadowColor = monstersFrozen ? "#00d4ff" : "#ff0055";
-
-  ctx.fillStyle = monstersFrozen ? "#7de3ff" : "#ff4d6d";
+  ctx.fillStyle = "#ffffff";
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  // horns
-  ctx.fillStyle = "#fff";
+  // ===== คำนวณทิศทางมอง (มองหัวงู) =====
+  const head = snake[0];
+  const tx = head.x * GRID + GRID / 2;
+  const ty = head.y * GRID + GRID / 2;
+
+  let dx = tx - cx;
+  let dy = ty - cy;
+  const dist = Math.hypot(dx, dy) || 1;
+  dx /= dist;
+  dy /= dist;
+
+  // ระยะขยับรูม่าน
+  const pupilOffset = r * 0.35;
+
+  const px = cx + dx * pupilOffset;
+  const py = cy + dy * pupilOffset;
+
+  // ===== ม่านตา =====
+  ctx.fillStyle = monstersFrozen ? "#66f2ff" : "#ff4d6d";
   ctx.beginPath();
-  ctx.moveTo(cx - 5, cy - r);
-  ctx.lineTo(cx - 2, cy - r - 6);
-  ctx.lineTo(cx, cy - r);
-  ctx.moveTo(cx + 5, cy - r);
-  ctx.lineTo(cx + 2, cy - r - 6);
-  ctx.lineTo(cx, cy - r);
+  ctx.arc(px, py, r * 0.45, 0, Math.PI * 2);
   ctx.fill();
 
-  // mouth
-  ctx.strokeStyle = "#111";
+  // ===== รูม่าน =====
+  ctx.fillStyle = "#000";
   ctx.beginPath();
-  ctx.arc(cx, cy + 4, r / 2, 0, Math.PI);
-  ctx.stroke();
+  ctx.arc(px, py, r * 0.22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ===== ไฮไลต์แสง =====
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.beginPath();
+  ctx.arc(px - r*0.15, py - r*0.15, r * 0.12, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 

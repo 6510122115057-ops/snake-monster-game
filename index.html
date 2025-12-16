@@ -812,7 +812,7 @@ ctx.fillText(
 );
 
 }
-
+  
 function drawMonster(m) {
   const cx = m.x * GRID + GRID / 2;
   const cy = m.y * GRID + GRID / 2;
@@ -844,7 +844,8 @@ function drawMonster(m) {
   ctx.arc(cx, cy + 4, r / 2, 0, Math.PI);
   ctx.stroke();
 }
-  
+
+
 function draw(){
   ctx.fillStyle = "#1a1a2e";
   ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -878,28 +879,8 @@ function draw(){
     ctx.stroke();
   }
 
-  monster.forEach(m => {
-    if(monstersFrozen){
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = "#00d4ff";
-      ctx.fillStyle = "#00d4ff";
-    } else {
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = "#ff0066";
-      ctx.fillStyle = "#ff0066";
-    }
-
-    ctx.beginPath();
-    ctx.arc(m.x*GRID+GRID/2, m.y*GRID+GRID/2, GRID/2-1, 0, Math.PI*2);
-    ctx.fill();
-
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.arc(m.x*GRID+GRID/2-3, m.y*GRID+GRID/2-2, 2, 0, Math.PI*2);
-    ctx.arc(m.x*GRID+GRID/2+3, m.y*GRID+GRID/2-2, 2, 0, Math.PI*2);
-    ctx.fill();
-  });
+  // 👹 วาดมอนสเตอร์
+    monster.forEach(m => drawMonster(m));
 
   ctx.shadowBlur = 0;
 

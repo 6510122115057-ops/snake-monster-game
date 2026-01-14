@@ -49,6 +49,65 @@
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.2);
       max-width: 280px;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 9999;
+    }
+
+    .ui.collapsed {
+      transform: translateX(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .ui-toggle {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 24px;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      z-index: 10000;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .ui-toggle:hover {
+      background: rgba(255,255,255,0.3);
+      transform: scale(1.1);
+    }
+
+    .ui-toggle.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mini-score {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      padding: 10px 15px;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+      display: none;
+    }
+
+    .mini-score.show {
+      display: block;
     }
 
     .difficulty {
@@ -105,6 +164,7 @@
       justify-content: center;
       align-items: center;
       z-index: 9999;
+      display: none; /* ซ่อนบน PC */
     }
 
     .touch-controls {
@@ -195,7 +255,7 @@
       body {
         justify-content:flex-start;
         padding-top: 80px;
-        padding-bottom: 140px; /* เว้นที่ให้ปุ่มจอยสติ๊ก */
+        padding-bottom: 200px; /* เพิ่มพื้นที่ให้ปุ่มจอยสติ๊ก */
       }
 
       .ui {
@@ -203,13 +263,36 @@
         margin: 0 16px 16px;
         width: calc(100% - 32px);
         max-width: 420px;
+        transform: none !important;
+        opacity: 1 !important;
+        pointer-events: all !important;
+      }
+
+      .ui.collapsed {
+        display: none;
+      }
+
+      .ui-toggle {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+      }
+
+      .mini-score {
+        display: none !important;
       }
 
       .touch-controls-wrapper {
+        display: flex; /* แสดงบนมือถือ */
         bottom: 24px;
         left: 50%;
         right: auto;
         transform: translateX(-50%);
+      }
+      
+      #game {
+        margin-bottom: 20px; /* เว้นระยะห่างจากจอยสติ๊ก */
       }
     }
   </style>
@@ -220,9 +303,23 @@
 <!-- เพลงพื้นหลัง (ใส่ไฟล์ bgm.mp3 ในโฟลเดอร์เดียวกับไฟล์นี้) -->
 <audio id="bgm" src="bgm.mp3" loop></audio>
 
-<div class="ui">
+<!-- ปุ่มเปิด/ปิด UI Panel -->
+<button class="ui-toggle" id="uiToggle">✕</button>
+
+<!-- คะแนนแบบย่อ (แสดงตอนเก็บ UI) -->
+<div class="mini-score" id="miniScore">
+  Score: <span id="miniScoreValue">0</span>
+</div>
+
+<div class="ui" id="uiPanel"></div>
   Score: <span id="score">0</span><br>
-  High Score: <span id="highScore">0</span>
+  High Score: <span id="highScore">0</span><br>
+  <div id="comboDisplay" style="display:none; margin-top:5px; font-size:16px; color:#ffeb3b; font-weight:bold; text-shadow: 0 0 10px #ffeb3b;">
+    🔥 COMBO x<span id="comboCount">0</span>
+  </div>
+  <div id="streakDisplay" style="margin-top:5px; font-size:13px; opacity:0.9;">
+    🔥 Streak: <span id="streakCount">0</span> วัน
+  </div>
 
   <div style="margin-top:10px; font-size:13px; line-height:1.4; background:rgba(255,255,255,0.15); padding:10px; border-radius:8px;">
     ใครได้ถึง <b>10000 แต้ม</b> ในโหมด <b>HARD</b><br>
@@ -299,7 +396,42 @@ const lbModeText = document.getElementById('lbModeText');
 const bgm = document.getElementById('bgm'); // เพลงพื้นหลัง
 const toggleMusicBtn = document.getElementById('toggleMusic');
 const volumeControl = document.getElementById('volumeControl');
+const comboDisplay = document.getElementById('comboDisplay');
+const comboCount = document.getElementById('comboCount');
+const streakDisplay = document.getElementById('streakCount');
+const uiPanel = document.getElementById('uiPanel');
+const uiToggle = document.getElementById('uiToggle');
+const miniScore = document.getElementById('miniScore');
+const miniScoreValue = document.getElementById('miniScoreValue');
 bgm.volume = 0.4;
+
+// ===== UI Toggle =====
+let uiVisible = true;
+
+// ตรวจสอบว่า element มีหรือไม่
+if (uiToggle && uiPanel) {
+  uiToggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    uiVisible = !uiVisible;
+    console.log('UI Toggle clicked! uiVisible:', uiVisible);
+    
+    if (uiVisible) {
+      uiPanel.classList.remove('collapsed');
+      miniScore.classList.remove('show');
+      uiToggle.textContent = '✕';
+      uiToggle.style.fontSize = '28px';
+    } else {
+      uiPanel.classList.add('collapsed');
+      miniScore.classList.add('show');
+      uiToggle.textContent = '☰';
+      uiToggle.style.fontSize = '24px';
+    }
+  });
+} else {
+  console.error('UI Toggle elements not found!', {uiToggle, uiPanel});
+}
 
 // ---------- WebAudio สำหรับเอฟเฟกต์เสียง ----------
 let audioCtx = null;
@@ -446,7 +578,135 @@ let deathReason = "";
 let fearShake = 0; // งูขี้กลัว
 let directionLocked = false; // 🔒 ล็อกทิศทาง
 
+// ===== ระบบ Combo =====
+let combo = 0;
+let comboTimer = 0;
+let maxCombo = 0;
+
+// ===== Power-ups =====
+let powerUps = [];
+let activeShield = false;
+let shieldDuration = 0;
+let speedBoost = false;
+let speedBoostDuration = 0;
+let magnetActive = false;
+let magnetDuration = 0;
+
+// ===== Achievement System =====
+let achievements = {
+  firstKill: false,
+  combo5: false,
+  combo10: false,
+  score100: false,
+  score500: false,
+  score1000: false,
+  survivor3min: false,
+  shieldSave: false,
+  speedDemon: false
+};
+let achievementQueue = [];
+let gameStartTime = 0;
+
+// ===== Streak System =====
+let dailyStreak = parseInt(localStorage.getItem('snakeDailyStreak') || '0');
+let lastPlayDate = localStorage.getItem('snakeLastPlayDate') || '';
+
+// ===== Slow Motion =====
+let slowMotion = false;
+let slowMotionDuration = 0;
+
 highScoreEl.textContent = highScore;
+streakDisplay.textContent = dailyStreak;
+
+// ===== อัพเดท Streak =====
+function updateStreak() {
+  const today = new Date().toDateString();
+  if (lastPlayDate !== today) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (lastPlayDate === yesterday.toDateString()) {
+      dailyStreak++;
+    } else if (lastPlayDate !== today) {
+      dailyStreak = 1;
+    }
+    
+    lastPlayDate = today;
+    localStorage.setItem('snakeDailyStreak', dailyStreak);
+    localStorage.setItem('snakeLastPlayDate', lastPlayDate);
+    streakDisplay.textContent = dailyStreak;
+  }
+}
+updateStreak();
+
+// ===== Achievement Functions =====
+function unlockAchievement(key, title, desc) {
+  if (!achievements[key]) {
+    achievements[key] = true;
+    achievementQueue.push({ title, desc });
+    localStorage.setItem('snakeAchievements', JSON.stringify(achievements));
+    playAchievementSound();
+    setTimeout(showAchievement, 100);
+  }
+}
+
+function playAchievementSound() {
+  playBeep(880, 0.1, "sine");
+  setTimeout(() => playBeep(1100, 0.1, "sine"), 100);
+  setTimeout(() => playBeep(1320, 0.15, "sine"), 200);
+}
+
+function showAchievement() {
+  if (achievementQueue.length === 0) return;
+  
+  const ach = achievementQueue.shift();
+  const div = document.createElement('div');
+  div.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 10000;
+    text-align: center;
+    animation: achievementPop 3s ease-out forwards;
+  `;
+  div.innerHTML = `
+    <div style="font-size: 40px; margin-bottom: 10px;">🏆</div>
+    <div style="font-size: 18px; font-weight: bold;">${ach.title}</div>
+    <div style="font-size: 14px; opacity: 0.9; margin-top: 5px;">${ach.desc}</div>
+  `;
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes achievementPop {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      10% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+      15% { transform: translate(-50%, -50%) scale(1); }
+      85% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(div);
+  
+  setTimeout(() => {
+    div.remove();
+    if (achievementQueue.length > 0) {
+      setTimeout(showAchievement, 500);
+    }
+  }, 3000);
+}
+
+// โหลด achievements
+const savedAch = localStorage.getItem('snakeAchievements');
+if (savedAch) {
+  achievements = { ...achievements, ...JSON.parse(savedAch) };
+}
 
 const difficultySettings = {
   easy:   { snakeSpeed: 100, monsterMoveInterval: 4, monsterCount: 1 },
@@ -535,6 +795,7 @@ function resetGame(){
   score = 0;
   nextFreezeScore = 100;
   scoreEl.textContent = score;
+  miniScoreValue.textContent = score;
   running = true;
   monsterMoveCounter = 0;
   clearInterval(tickInterval);
@@ -545,6 +806,10 @@ function resetGame(){
   particles = [];
 floatingTexts = [];
 nextMonsterRespawnScore = 100;
+combo = 0;
+comboTimer = 0;
+comboDisplay.style.display = 'none';
+gameStartTime = Date.now();
 
 }
 
@@ -741,6 +1006,12 @@ function gameTick(){
 
         score += 20;
         scoreEl.textContent = score;
+        miniScoreValue.textContent = score;
+
+        // Achievement: ฆ่ามอนสเตอร์ตัวแรก
+        if (!achievements.firstKill) {
+          unlockAchievement('firstKill', 'First Blood!', 'ฆ่ามอนสเตอร์ตัวแรก');
+        }
 
         spawnIceExplosion(killed.x, killed.y);     // ❄️ แตกน้ำแข็ง
         spawnFloatingText(killed.x, killed.y, "+20"); // ✨ คะแนนลอย
@@ -772,8 +1043,34 @@ function gameTick(){
   snake.unshift(head);
 
   if (head.x === food.x && head.y === food.y){
-    score += 10;
+    // ===== Combo System =====
+    combo++;
+    comboTimer = 50; // 50 ticks = ประมาณ 3-5 วินาที
+    if (combo > maxCombo) maxCombo = combo;
+    
+    let comboBonus = 0;
+    if (combo >= 10) comboBonus = 50;
+    else if (combo >= 5) comboBonus = 20;
+    else if (combo >= 3) comboBonus = 10;
+    
+    score += 10 + comboBonus;
     scoreEl.textContent = score;
+    miniScoreValue.textContent = score;
+    
+    // แสดง Combo
+    if (combo >= 3) {
+      comboDisplay.style.display = 'block';
+      comboCount.textContent = combo;
+      spawnFloatingText(head.x, head.y, `+${10 + comboBonus}${comboBonus > 0 ? ' 🔥' : ''}`);
+    }
+    
+    // Achievements
+    if (combo === 5) unlockAchievement('combo5', 'Combo Master!', 'ทำ Combo 5 ครั้งติดกัน');
+    if (combo === 10) unlockAchievement('combo10', 'Combo God!', 'ทำ Combo 10 ครั้งติดกัน');
+    if (score >= 100 && !achievements.score100) unlockAchievement('score100', 'Century!', 'ได้ 100 คะแนน');
+    if (score >= 500 && !achievements.score500) unlockAchievement('score500', 'High Scorer!', 'ได้ 500 คะแนน');
+    if (score >= 1000 && !achievements.score1000) unlockAchievement('score1000', 'Legend!', 'ได้ 1000 คะแนน');
+    
     playEatSound();                   // เอฟเฟกต์เสียงกิน
     triggerCanvasFlash('eat-flash');  // เอฟเฟกต์แสงตอนกิน
     placeFood();
@@ -806,6 +1103,15 @@ function gameTick(){
     if (score >= nextMonsterRespawnScore) {
     spawnExtraMonster();
     nextMonsterRespawnScore += 100;
+    }
+
+    // ===== อัพเดท Combo Timer =====
+    if (comboTimer > 0) {
+      comboTimer--;
+      if (comboTimer === 0) {
+        combo = 0;
+        comboDisplay.style.display = 'none';
+      }
     }
 
         // ===== ตรวจว่างูกลัวไหม (มอนอยู่ใกล้หัวงู) =====
@@ -858,6 +1164,23 @@ ctx.fillText(
   "Press Restart to play again",
   canvas.width/2,
   canvas.height/2 + 30
+);
+
+ctx.font = "14px sans-serif";
+ctx.fillStyle = "#aaa";
+ctx.fillText(
+  "(หรือคลิกที่หน้าจอ)",
+  canvas.width/2,
+  canvas.height/2 + 50
+);
+
+// แสดงสถิติ
+ctx.font = "14px sans-serif";
+ctx.fillStyle = "#aaa";
+ctx.fillText(
+  `Max Combo: ${maxCombo}x`,
+  canvas.width/2,
+  canvas.height/2 + 75
 );
 
 }
@@ -1061,12 +1384,23 @@ let touchStartY = 0;
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   startBgm(); // แตะหน้าจอให้เพลงเริ่ม
+  
+  // ถ้า Game Over แล้ว คลิกเพื่อรีสตาร์ท
+  if (!running) {
+    resetGame();
+    return;
+  }
+  
   touchStartX = e.touches[0].clientX;
   touchStartY = e.touches[0].clientY;
 });
 
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
+  
+  // ถ้า Game Over อยู่ ไม่ต้องทำอะไร (รีสตาร์ทไปแล้วตอน touchstart)
+  if (!running) return;
+  
   const touchEndX = e.changedTouches[0].clientX;
   const touchEndY = e.changedTouches[0].clientY;
 
@@ -1085,6 +1419,14 @@ canvas.addEventListener('touchend', (e) => {
 restartBtn.addEventListener('click', () => {
   startBgm(); // กดรีสตาร์ทให้เพลงเล่นด้วย
   resetGame();
+});
+
+// คลิกที่ canvas ตอน Game Over ก็รีสตาร์ทได้
+canvas.addEventListener('click', () => {
+  if (!running) {
+    startBgm();
+    resetGame();
+  }
 });
 
 resetGame();

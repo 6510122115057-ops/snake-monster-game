@@ -927,11 +927,28 @@ achievementModal.addEventListener('click', (e) => {
   }
 });
 
-// ===== Share Score =====
-shareBtn.addEventListener('click', () => {
-  shareScoreDisplay.textContent = score;
-  shareDifficulty.textContent = difficulty.toUpperCase();
-  shareModal.classList.add('show');
+// ===== Share Score (Smart Share) =====
+shareBtn.addEventListener('click', async () => {
+  const text = `🐍 ฉันได้ ${score} คะแนนในเกม Snake (โหมด ${difficulty.toUpperCase()})!`;
+  const url = 'https://snakevsmonster-game.onrender.com';
+
+  // 👉 ถ้าเป็นมือถือ และรองรับ Web Share
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Snake Game Score',
+        text,
+        url
+      });
+    } catch (err) {
+      // ผู้ใช้กดยกเลิก ไม่ต้องทำอะไร
+    }
+  } else {
+    // 👉 Desktop: เปิด Share Modal แบบเดิม
+    shareScoreDisplay.textContent = score;
+    shareDifficulty.textContent = difficulty.toUpperCase();
+    shareModal.classList.add('show');
+  }
 });
 
 closeShareModal.addEventListener('click', () => {

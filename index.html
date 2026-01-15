@@ -22,7 +22,7 @@
   <meta name="twitter:description" content="🐍 เกมงูปะทะมอนสเตอร์ เล่นฟรีบนเว็บ!">
 
   <!-- favicon -->
-  <link rel="icon" type="image/png"
+  <link rel="icon" type="image/png" sizes="32x32"
         href="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
 
   <style>
@@ -1022,6 +1022,41 @@ let pendingThemeKey = null;
 // ===== Admin Unlock Code =====
 const ADMIN_UNLOCK_CODE = "SNAKEVSMONSTER2569";
 
+// ===== One-Time Unlock Codes (ใช้ได้ครั้งเดียว) =====
+const usedCodes = JSON.parse(localStorage.getItem("snakeUsedCodes") || "[]");
+
+function isCodeUsed(code) {
+  return usedCodes.includes(code);
+}
+
+function markCodeAsUsed(code) {
+  if (!usedCodes.includes(code)) {
+    usedCodes.push(code);
+    localStorage.setItem("snakeUsedCodes", JSON.stringify(usedCodes));
+  }
+}
+
+// ===== ตรวจสอบรูปแบบโค้ด =====
+function validateUnlockCode(code, themeKey) {
+  // รูปแบบ: THEMENAME-XXXXXX (เช่น NEON-A7B3C9)
+  const themeName = themes[themeKey].name.toUpperCase();
+  const pattern = new RegExp(`^${themeName}-[A-Z0-9]{6}$`);
+  return pattern.test(code);
+}
+
+// ===== ฟังก์ชันสร้างโค้ดสำหรับแอดมิน =====
+function generateUnlockCode(themeKey) {
+  const themeName = themes[themeKey].name.toUpperCase();
+  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `${themeName}-${randomPart}`;
+}
+
+// ===== Console Helper สำหรับแอดมิน =====
+console.log("🔧 Admin Tools:");
+console.log("สร้างโค้ดปลดล็อก: generateUnlockCode('neon')");
+console.log("ดูโค้ดที่ใช้แล้ว: usedCodes");
+console.log("ล้างโค้ดที่ใช้แล้ว: localStorage.removeItem('snakeUsedCodes')");
+
 function openUnlockModal(themeKey) {
   pendingThemeKey = themeKey;
 
@@ -1039,12 +1074,25 @@ function closeUnlockModal() {
 
 function unlockWithAdminCode() {
   const input = document.getElementById("adminCodeInput");
-  const code = input.value.trim();
+  const code = input.value.trim().toUpperCase();
 
   if (!pendingThemeKey) return;
 
-  if (code !== ADMIN_UNLOCK_CODE) {
-    alert("❌ รหัสแอดมินไม่ถูกต้อง");
+  // ตรวจสอบว่าโค้ดถูกใช้ไปแล้วหรือยัง
+  if (isCodeUsed(code)) {
+    alert("❌ โค้ดนี้ถูกใช้ไปแล้ว\nกรุณาติดต่อแอดมินเพื่อขอโค้ดใหม่");
+    input.value = "";
+    return;
+  }
+
+  // ตรวจสอบรูปแบบโค้ด (เช่น NEON-A7B3C9)
+  const isValidFormat = validateUnlockCode(code, pendingThemeKey);
+  
+  // ตรวจสอบโค้ดแอดมิน (รหัสหลัก)
+  const isAdminCode = code === ADMIN_UNLOCK_CODE;
+
+  if (!isValidFormat && !isAdminCode) {
+    alert("❌ รูปแบบโค้ดไม่ถูกต้อง\nรูปแบบที่ถูกต้อง: " + themes[pendingThemeKey].name.toUpperCase() + "-XXXXXX");
     input.value = "";
     return;
   }
@@ -1054,6 +1102,11 @@ function unlockWithAdminCode() {
 
   currentTheme = pendingThemeKey;
   localStorage.setItem("snakeTheme", pendingThemeKey);
+
+  // บันทึกว่าโค้ดนี้ถูกใช้แล้ว (ยกเว้นโค้ดแอดมิน)
+  if (!isAdminCode) {
+    markCodeAsUsed(code);
+  }
 
   // อัปเดตปุ่ม
   themeBtns.forEach(btn => {
@@ -1068,31 +1121,24 @@ function unlockWithAdminCode() {
   closeUnlockModal();
   input.value = "";
 
-  alert("🛠️ แอดมินปลดล็อกธีมเรียบร้อย!");
+  alert("🎉 ปลดล็อกธีมเรียบร้อย!\nธีม " + themes[pendingThemeKey].name + " พร้อมใช้งานแล้ว");
 }
 
 function notifyPayment() {
   if (!pendingThemeKey) return;
 
-  // 🔓 ปลดล็อกธีม (local)
-  unlockTheme(pendingThemeKey);
+  const themeName = themes[pendingThemeKey].name;
+  const themePrice = themes[pendingThemeKey].price;
 
-  // 🎨 ใช้ธีมทันที
-  currentTheme = pendingThemeKey;
-  localStorage.setItem("snakeTheme", pendingThemeKey);
-
-  // 🔄 อัปเดตปุ่มธีม
-  themeBtns.forEach(btn => {
-    if (btn.dataset.theme === pendingThemeKey) {
-      btn.classList.add("active");
-      btn.textContent = themes[pendingThemeKey].name; // เอา 🔒 ออก
-    } else {
-      btn.classList.remove("active");
-    }
-  });
+  // 📧 แจ้งผู้เล่นให้ส่งสลิปให้แอดมิน
+  alert(
+    `✅ กรุณาส่งสลิปการโอนเงิน ${themePrice} บาท\n` +
+    `พร้อมระบุธีม "${themeName}"\n\n` +
+    `ส่งมาที่: bosszazababa@gmail.com\n\n` +
+    `แอดมินจะส่งโค้ดปลดล็อกให้ภายใน 24 ชม.`
+  );
 
   closeUnlockModal();
-  alert("✅ ปลดล็อกธีมเรียบร้อย!");
 }
 
 uiToggle.addEventListener('click', () => {
@@ -1477,15 +1523,6 @@ let combo = 0;
 let comboTimer = 0;
 let maxCombo = 0;
 
-// ===== Power-ups =====
-let powerUps = [];
-let activeShield = false;
-let shieldDuration = 0;
-let speedBoost = false;
-let speedBoostDuration = 0;
-let magnetActive = false;
-let magnetDuration = 0;
-
 // ===== Achievement System =====
 let achievements = {
   firstKill: false,
@@ -1494,10 +1531,7 @@ let achievements = {
   score100: false,
   score500: false,
   score1000: false,
-  score10000: false,
-  survivor3min: false,
-  shieldSave: false,
-  speedDemon: false
+  score10000: false
 };
 let achievementQueue = [];
 let gameStartTime = 0;
@@ -1505,10 +1539,6 @@ let gameStartTime = 0;
 // ===== Streak System =====
 let dailyStreak = parseInt(localStorage.getItem('snakeDailyStreak') || '0');
 let lastPlayDate = localStorage.getItem('snakeLastPlayDate') || '';
-
-// ===== Slow Motion =====
-let slowMotion = false;
-let slowMotionDuration = 0;
 
 highScoreEl.textContent = highScore;
 streakDisplay.textContent = dailyStreak;
@@ -2446,31 +2476,39 @@ setInterval(() => {
       แล้วกด “แจ้งโอนแล้ว”
     </p>
 
-    <hr style="margin:15px 0; opacity:0.3">
+    <hr style="margin:20px 0;border:none;border-top:1px solid rgba(255,255,255,0.2)">
 
-<p style="font-size:14px;opacity:0.9">
-  🔑 สำหรับแอดมิน:
-</p>
+    <p style="font-size:13px;opacity:0.85;margin-bottom:8px;">
+      💎 มีโค้ดปลดล็อกแล้ว?
+    </p>
 
-<input
-  id="adminCodeInput"
-  type="password"
-  placeholder="ใส่รหัสแอดมิน"
-  style="
-    width:100%;
-    padding:8px;
-    border-radius:8px;
-    border:none;
-    margin-bottom:8px;
-  "
->
+    <input
+      id="adminCodeInput"
+      type="text"
+      placeholder="ใส่โค้ดที่ได้จากแอดมิน"
+      style="
+        width:100%;
+        padding:10px;
+        border-radius:8px;
+        border:none;
+        margin-bottom:10px;
+        font-size:14px;
+        text-align:center;
+        text-transform:uppercase;
+      "
+    >
 
-<button onclick="unlockWithAdminCode()">
-  🗝️ ปลดล็อกด้วยรหัส
-</button>
+    <button onclick="unlockWithAdminCode()" style="background:#9C27B0;color:white;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;margin-bottom:10px;">
+      🔓 ปลดล็อกด้วยโค้ด
+    </button>
 
-    <button onclick="notifyPayment()">📨 แจ้งโอนแล้ว</button>
-    <button onclick="closeUnlockModal()">ปิด</button>
+    <button onclick="notifyPayment()" style="background:#4CAF50;color:white;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;margin-bottom:10px;">
+      📨 แจ้งโอนแล้ว
+    </button>
+    
+    <button onclick="closeUnlockModal()" style="background:#666;color:white;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;">
+      ปิด
+    </button>
   </div>
 </div>
 

@@ -932,7 +932,6 @@ shareBtn.addEventListener('click', async () => {
   const text = `🐍 ฉันได้ ${score} คะแนนในเกม Snake (โหมด ${difficulty.toUpperCase()})!`;
   const url = 'https://snakevsmonster-game.onrender.com';
 
-  // 👉 ถ้าเป็นมือถือ และรองรับ Web Share
   if (navigator.share) {
     try {
       await navigator.share({
@@ -940,15 +939,16 @@ shareBtn.addEventListener('click', async () => {
         text,
         url
       });
+      return; 
     } catch (err) {
-      // ผู้ใช้กดยกเลิก ไม่ต้องทำอะไร
+      return; 
     }
-  } else {
-    // 👉 Desktop: เปิด Share Modal แบบเดิม
-    shareScoreDisplay.textContent = score;
-    shareDifficulty.textContent = difficulty.toUpperCase();
-    shareModal.classList.add('show');
   }
+
+  // 👉 Desktop เท่านั้น
+  shareScoreDisplay.textContent = score;
+  shareDifficulty.textContent = difficulty.toUpperCase();
+  shareModal.classList.add('show');
 });
 
 closeShareModal.addEventListener('click', () => {

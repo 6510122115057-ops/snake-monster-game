@@ -26,6 +26,42 @@
         href="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
 
   <style>
+
+    .unlock-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 30000;
+}
+
+.unlock-modal.show {
+  display: flex;
+}
+
+.unlock-modal-content {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 30px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.unlock-modal-content button {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
     body {
       display:flex;
       flex-direction:column;
@@ -870,26 +906,6 @@ const shareTwitter = document.getElementById('shareTwitter');
 const shareFacebook = document.getElementById('shareFacebook');
 const shareCopy = document.getElementById('shareCopy');
 const themeBtns = document.querySelectorAll('.theme-btn');
-// ===== Theme Button Logic =====
-themeBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
-    const themeKey = btn.dataset.theme;
-
-    // ถ้าเป็นธีมล็อก และยังไม่ปลด
-    if (themes[themeKey].locked && !isThemeUnlocked(themeKey)) {
-      alert("🔒 ธีมนี้ต้องปลดล็อกก่อน (เติม 10 บาท)");
-      return;
-    }
-
-    // เปลี่ยนธีม
-    currentTheme = themeKey;
-    localStorage.setItem("snakeTheme", themeKey);
-
-    // เปลี่ยน active UI
-    themeBtns.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-  });
-});
 bgm.volume = 0.4;
 
 // ===== FPS Counter =====
@@ -962,6 +978,122 @@ const themes = {
   }
 };
 
+function updateThemeButtonsOnLoad() {
+  themeBtns.forEach(btn => {
+    const key = btn.dataset.theme;
+
+    // เอา 🔒 ออกถ้าปลดแล้ว
+    if (themes[key].locked && isThemeUnlocked(key)) {
+      btn.textContent = themes[key].name;
+    }
+
+    // active เฉพาะธีมปัจจุบัน
+    btn.classList.toggle("active", key === currentTheme);
+  });
+}
+
+// เรียกใช้งานทันทีตอนโหลดหน้า
+updateThemeButtonsOnLoad();
+
+// ===== Theme Button Logic =====
+themeBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const themeKey = btn.dataset.theme;
+
+    // ถ้าเป็นธีมล็อก และยังไม่ปลด
+    if (themes[themeKey].locked && !isThemeUnlocked(themeKey)) {
+      openUnlockModal(themeKey);
+      return;
+    }
+
+    // เปลี่ยนธีม
+    currentTheme = themeKey;
+    localStorage.setItem("snakeTheme", themeKey);
+
+    // เปลี่ยน active UI
+    themeBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+// ===== Unlock Theme System (UX ดี) =====
+let pendingThemeKey = null;
+
+// ===== Admin Unlock Code =====
+const ADMIN_UNLOCK_CODE = "SNAKEVSMONSTER2569";
+
+function openUnlockModal(themeKey) {
+  pendingThemeKey = themeKey;
+
+  document.getElementById("unlockThemeText").textContent =
+    `ธีม ${themes[themeKey].name} ราคา ${themes[themeKey].price} บาท`;
+
+  document.getElementById("unlockModal").classList.add("show");
+}
+
+function closeUnlockModal() {
+  document.getElementById("unlockModal").classList.remove("show");
+  const input = document.getElementById("adminCodeInput");
+  if (input) input.value = "";
+}
+
+function unlockWithAdminCode() {
+  const input = document.getElementById("adminCodeInput");
+  const code = input.value.trim();
+
+  if (!pendingThemeKey) return;
+
+  if (code !== ADMIN_UNLOCK_CODE) {
+    alert("❌ รหัสแอดมินไม่ถูกต้อง");
+    input.value = "";
+    return;
+  }
+
+  // ✅ ปลดล็อกธีม
+  unlockTheme(pendingThemeKey);
+
+  currentTheme = pendingThemeKey;
+  localStorage.setItem("snakeTheme", pendingThemeKey);
+
+  // อัปเดตปุ่ม
+  themeBtns.forEach(btn => {
+    if (btn.dataset.theme === pendingThemeKey) {
+      btn.classList.add("active");
+      btn.textContent = themes[pendingThemeKey].name;
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  closeUnlockModal();
+  input.value = "";
+
+  alert("🛠️ แอดมินปลดล็อกธีมเรียบร้อย!");
+}
+
+function notifyPayment() {
+  if (!pendingThemeKey) return;
+
+  // 🔓 ปลดล็อกธีม (local)
+  unlockTheme(pendingThemeKey);
+
+  // 🎨 ใช้ธีมทันที
+  currentTheme = pendingThemeKey;
+  localStorage.setItem("snakeTheme", pendingThemeKey);
+
+  // 🔄 อัปเดตปุ่มธีม
+  themeBtns.forEach(btn => {
+    if (btn.dataset.theme === pendingThemeKey) {
+      btn.classList.add("active");
+      btn.textContent = themes[pendingThemeKey].name; // เอา 🔒 ออก
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  closeUnlockModal();
+  alert("✅ ปลดล็อกธีมเรียบร้อย!");
+}
 
 uiToggle.addEventListener('click', () => {
   const collapsed = uiPanel.classList.toggle('collapsed');
@@ -2298,5 +2430,49 @@ setInterval(() => {
 }, 15000); // ทุก 15 วินาที
 
 </script>
+
+<!-- Unlock Theme Modal -->
+<div class="unlock-modal" id="unlockModal">
+  <div class="unlock-modal-content">
+    <h2>🔒 ปลดล็อกธีม</h2>
+    <p id="unlockThemeText"></p>
+
+    <img src="promptpay-qr.png"
+         alt="PromptPay QR"
+         style="width:220px;border-radius:12px;margin:12px 0">
+
+    <p style="font-size:14px;opacity:0.9">
+      โอนเงิน <b>10 บาท</b> ผ่าน PromptPay<br>
+      แล้วกด “แจ้งโอนแล้ว”
+    </p>
+
+    <hr style="margin:15px 0; opacity:0.3">
+
+<p style="font-size:14px;opacity:0.9">
+  🔑 สำหรับแอดมิน:
+</p>
+
+<input
+  id="adminCodeInput"
+  type="password"
+  placeholder="ใส่รหัสแอดมิน"
+  style="
+    width:100%;
+    padding:8px;
+    border-radius:8px;
+    border:none;
+    margin-bottom:8px;
+  "
+>
+
+<button onclick="unlockWithAdminCode()">
+  🗝️ ปลดล็อกด้วยรหัส
+</button>
+
+    <button onclick="notifyPayment()">📨 แจ้งโอนแล้ว</button>
+    <button onclick="closeUnlockModal()">ปิด</button>
+  </div>
+</div>
+
 </body>
 </html>

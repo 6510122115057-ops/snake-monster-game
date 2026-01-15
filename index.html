@@ -657,7 +657,7 @@
 <div class="share-modal" id="shareModal">
   <div class="share-modal-content">
     <button class="share-modal-close" id="closeShareModal">✕</button>
-    <h2 style="margin-top: 0;">🎮 แชร์คะแนน</h2>
+    <h2 style="margin-top: 0;">🏆 แชร์สถิติสูงสุด</h2>
     <div class="share-score-display" id="shareScoreDisplay">0</div>
     <div style="font-size: 14px; opacity: 0.9; margin-bottom: 10px;">
       โหมด: <span id="shareDifficulty">Easy</span>
@@ -943,7 +943,7 @@ achievementModal.addEventListener('click', (e) => {
 
 // ===== Share Score (Smart Share) =====
 shareBtn.addEventListener('click', async () => {
-  const text = `🐍 ฉันได้ ${score} คะแนนในเกม Snake (โหมด ${difficulty.toUpperCase()})!`;
+  const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})! 🎮🔥`;
   const url = 'https://snakevsmonster-game.onrender.com';
 
   if (navigator.share) {
@@ -960,7 +960,7 @@ shareBtn.addEventListener('click', async () => {
   }
 
   // 👉 Desktop เท่านั้น
-  shareScoreDisplay.textContent = score;
+  shareScoreDisplay.textContent = highScore;
   shareDifficulty.textContent = difficulty.toUpperCase();
   shareModal.classList.add('show');
 });
@@ -976,7 +976,7 @@ shareModal.addEventListener('click', (e) => {
 });
 
 shareTwitter.addEventListener('click', () => {
-  const text = `🐍 ฉันได้ ${score} คะแนนในเกม Snake (โหมด ${difficulty.toUpperCase()})! มาท้าชิงกันเลย! 🎮`;
+  const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})! มาท้าชิงกัน! 🎮🔥`;
   const url = 'https://snakevsmonster-game.onrender.com';
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(twitterUrl, '_blank');
@@ -989,7 +989,7 @@ shareFacebook.addEventListener('click', () => {
 });
 
 shareCopy.addEventListener('click', async () => {
-  const text = `🐍 ฉันได้ ${score} คะแนนในเกม Snake (โหมด ${difficulty.toUpperCase()})!\nhttps://snakevsmonster-game.onrender.com`;
+  const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})!\nhttps://snakevsmonster-game.onrender.com`;
   
   try {
     await navigator.clipboard.writeText(text);
@@ -1242,7 +1242,11 @@ const ROWS = canvas.height / GRID;
 
 let snake, dir, food, monster, running, score, tickInterval, monsterMoveCounter;
 let difficulty = 'easy';
-let highScore = 0;
+let highScore = parseInt(localStorage.getItem('snakeHighScore') || '0');
+let lastPlayerRank = null;   
+let overtakeAlertCount = 0;  
+highScoreEl.textContent = highScore;
+let leaderboardLoading = false;
 let freezeItem = null;
 let monstersFrozen = false;
 let freezeDuration = 0;
@@ -1412,6 +1416,9 @@ function startBgm() {
 }
 
 async function loadLeaderboard() {
+  if (leaderboardLoading) return;
+  leaderboardLoading = true;
+
   try {
     lbModeText.textContent = difficulty;
     const res = await fetch(`${SCORE_API_BASE}/scores/top?mode=${difficulty}`);
@@ -1424,13 +1431,40 @@ async function loadLeaderboard() {
       leaderboardEl.appendChild(li);
       return;
     }
-    data.forEach((row) => {
-      const li = document.createElement("li");
-      li.textContent = `${row.name} — ${row.score}`;
-      leaderboardEl.appendChild(li);
-    });
-  } catch (e) {
+    let currentRank = null;
+const myName = localStorage.getItem("snakePlayerName");
+
+data.forEach((row, index) => {
+  const li = document.createElement("li");
+  li.textContent = `${row.name} — ${row.score}`;
+  leaderboardEl.appendChild(li);
+
+  // ถ้าเป็นชื่อของเรา
+  if (row.name === myName) {
+    currentRank = index + 1;
+    li.style.color = "#ffeb3b";
+    li.style.fontWeight = "bold";
+  }
+});
+
+// ===== ตรวจโดนแซง (เฉพาะตอนเกมไม่เล่น) =====
+if (!running) {
+  if (
+    lastPlayerRank !== null &&
+    currentRank !== null &&
+    currentRank > lastPlayerRank
+  ) {
+    showOvertakeAlert();
+  }
+}
+
+// อัปเดตอันดับล่าสุดเสมอ
+lastPlayerRank = currentRank;
+
+    } catch (e) {
     console.error("Load leaderboard error", e);
+  } finally {
+    leaderboardLoading = false;
   }
 }
 
@@ -1466,6 +1500,8 @@ diffBtns.forEach(btn => {
 });
 
 function resetGame(){
+  overtakeAlertCount = 0;
+  lastPlayerRank = null;
   snake = [{x: Math.floor(COLS/2), y: Math.floor(ROWS/2)}];
   dir = {x:1, y:0};
   food = {x: 0, y: 0};
@@ -1827,6 +1863,7 @@ function gameOver(){
   if (score > highScore) {
     highScore = score;
     highScoreEl.textContent = highScore;
+    localStorage.setItem('snakeHighScore', highScore);
   }
 
   if (score > 0) {
@@ -2137,7 +2174,49 @@ canvas.addEventListener('click', () => {
   }
 });
 
+// ===== แจ้งเตือนเมื่อโดนแซงคะแนน =====
+function showOvertakeAlert() {
+  // ❌ ถ้าเกมกำลังเล่นอยู่ ไม่แจ้ง
+  if (running) return;
+
+  // ❌ แจ้งครบ 3 ครั้งแล้ว
+  if (overtakeAlertCount >= 3) return;
+
+  overtakeAlertCount++;
+
+  // 🔊 เสียงเตือน
+  playBeep(1200, 0.12, "square");
+
+  // 📢 กล่องแจ้งเตือน
+  const alertBox = document.createElement("div");
+  alertBox.style.cssText = `
+    position: fixed;
+    top: ${100 + overtakeAlertCount * 60}px;
+    right: 20px;
+    background: linear-gradient(135deg, #ff512f, #dd2476);
+    color: white;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-weight: bold;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 30000;
+  `;
+
+  alertBox.textContent = "⚠️ มีผู้เล่นแซงคะแนนคุณแล้ว!";
+
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => {
+    alertBox.remove();
+  }, 3000);
+}
+
 resetGame();
+
+setInterval(() => {
+  loadLeaderboard();
+}, 15000); // ทุก 15 วินาที
+
 </script>
 </body>
 </html>

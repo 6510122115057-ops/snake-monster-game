@@ -9,13 +9,17 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Snake vs Monster">
   <meta property="og:description" content="🐍 Survive. Eat. Evolve. เกมงูปะทะมอนสเตอร์สุดมันส์!">
-  <meta property="og:image" content="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
   <meta property="og:url" content="https://snakevsmonster-game.onrender.com">
   <meta property="og:site_name" content="Snake vs Monster">
+  <meta property="og:image" content="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
+  <meta name="twitter:title" content="Snake vs Monster">
+  <meta name="twitter:description" content="🐍 เกมงูปะทะมอนสเตอร์ เล่นฟรีบนเว็บ!">
 
   <!-- favicon -->
   <link rel="icon" type="image/png"
@@ -59,12 +63,28 @@
       font-size:18px;
       background: rgba(255,255,255,0.1);
       backdrop-filter: blur(10px);
-      padding: 15px 20px;
+      padding: 15px 20px 25px;
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.2);
       max-width: 280px;
       transition: transform 0.3s ease, opacity 0.3s ease;
       z-index: 9999;
+      
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .ui::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .ui::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.35);
+      border-radius: 10px;
+    }
+
+    .ui::-webkit-scrollbar-track {
+      background: transparent;
     }
 
     .ui.collapsed {
@@ -75,7 +95,6 @@
     }
 
     .ui-toggle {
-      position: fixed;
       top: 20px;
       left: 20px;
       background: rgba(255,255,255,0.2);
@@ -731,6 +750,13 @@
     <button class="diff-btn" data-level="normal">Normal</button>
     <button class="diff-btn" data-level="hard">Hard</button>
   </div>
+
+  <div style="margin-top:12px;">
+  <b>Theme</b><br>
+  <button class="theme-btn active" data-theme="default">Classic</button>
+  <button class="theme-btn" data-theme="neon">Neon 🔒</button>
+</div>
+
   <button id="restart">Restart</button>
   <div style="margin-top:12px; font-size:14px;">
   <b>Sound</b><br>
@@ -844,6 +870,26 @@ const shareTwitter = document.getElementById('shareTwitter');
 const shareFacebook = document.getElementById('shareFacebook');
 const shareCopy = document.getElementById('shareCopy');
 const themeBtns = document.querySelectorAll('.theme-btn');
+// ===== Theme Button Logic =====
+themeBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const themeKey = btn.dataset.theme;
+
+    // ถ้าเป็นธีมล็อก และยังไม่ปลด
+    if (themes[themeKey].locked && !isThemeUnlocked(themeKey)) {
+      alert("🔒 ธีมนี้ต้องปลดล็อกก่อน (เติม 10 บาท)");
+      return;
+    }
+
+    // เปลี่ยนธีม
+    currentTheme = themeKey;
+    localStorage.setItem("snakeTheme", themeKey);
+
+    // เปลี่ยน active UI
+    themeBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
 bgm.volume = 0.4;
 
 // ===== FPS Counter =====
@@ -869,17 +915,51 @@ let lastGameTick = 0;
 // ===== Theme System =====
 let currentTheme = localStorage.getItem('snakeTheme') || 'default';
 
+// ===== ธีมที่ปลดล็อกแล้ว =====
+const unlockedThemes = JSON.parse(
+  localStorage.getItem("snakeUnlockedThemes") || "[]"
+);
+
+function isThemeUnlocked(themeKey) {
+  return unlockedThemes.includes(themeKey);
+}
+
+function unlockTheme(themeKey) {
+  if (!unlockedThemes.includes(themeKey)) {
+    unlockedThemes.push(themeKey);
+    localStorage.setItem(
+      "snakeUnlockedThemes",
+      JSON.stringify(unlockedThemes)
+    );
+  }
+}
+
 const themes = {
   default: {
-    name: 'Classic',
-    background: '#1a1a2e',
-    snakeBody: ['#c7ede6', '#9fd3c7'],
-    food: '#ff6b6b',
-    freezeItem: '#00d4ff',
-    monsterEye: '#ffffff',
-    monsterPupil: '#ff4d6d',
-    particle: 'rgba(0,212,255,0.9)'
+    name: "Classic",
+    locked: false,
+    background: "#1a1a2e",
+    snakeBody: ["#c7ede6", "#9fd3c7"],
+    food: "#ff6b6b",
+    freezeItem: "#00d4ff",
+    monsterEye: "#ffffff",
+    monsterPupil: "#ff4d6d",
+    particle: "rgba(0,212,255,0.9)"
   },
+
+  neon: {
+    name: "Neon",
+    locked: true,
+    price: 10,
+
+    background: "#0b0f2b",
+    snakeBody: ["#00fff0", "#00c8ff"],
+    food: "#ff00ff",
+    freezeItem: "#00ffea",
+    monsterEye: "#ffffff",
+    monsterPupil: "#ff00aa",
+    particle: "rgba(0,255,255,0.9)"
+  }
 };
 
 

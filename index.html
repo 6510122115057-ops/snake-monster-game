@@ -787,39 +787,43 @@
 
 /* 🎯 GLOBAL MENU BUTTON - แยก stacking context สมบูรณ์ */
 #globalMenuBtn {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  width: 48px;
-  height: 48px;
+  position: fixed !important; /* บังคับให้เป็น fixed */
+  top: 12px !important;
+  left: 12px !important;
+  width: 48px !important;
+  height: 48px !important;
   
   /* 💥 z-index สูงสุด + แยก context */
-  z-index: 2147483647;
+  z-index: 2147483647 !important;
   isolation: isolate; /* คำสั่งแยกโลก - แก้ปัญหา stacking context */
   
   /* 🎨 สไตล์ */
-  background: rgba(0,0,0,0.45);
+  background: rgba(0,0,0,0.45) !important;
   backdrop-filter: blur(10px);
-  border-radius: 10px;
-  border: none;
+  border-radius: 10px !important;
+  border: none !important;
   
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
+  color: white !important;
+  font-size: 24px !important;
+  font-weight: bold !important;
   
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   
   /* 📱 Mobile optimized */
-  pointer-events: auto;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
   
   /* 🎭 Hover effects */
-  transition: all 0.2s ease;
-  cursor: pointer;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  
+  /* 🔒 ป้องกันการถูกซ่อน */
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 #globalMenuBtn:hover {
@@ -851,9 +855,6 @@
 }
 </style>
 <body>
-
-<!-- 🎯 GLOBAL MENU BUTTON - อยู่บนสุดของ body แยกจาก layout ทั้งหมด -->
-<button id="globalMenuBtn">☰</button>
 
 <!-- เพลงพื้นหลัง (ใส่ไฟล์ bgm.mp3 ในโฟลเดอร์เดียวกับไฟล์นี้) -->
 <audio id="bgm" src="bgm.mp3" loop></audio>
@@ -1045,6 +1046,40 @@ const comboCount = document.getElementById('comboCount');
 const streakDisplay = document.getElementById('streakCount');
 const uiPanel = document.getElementById('uiPanel');
 const uiToggle = document.getElementById('globalMenuBtn');
+
+// 🔍 Debug: ตรวจสอบว่าเจอปุ่มหรือไม่
+if (!uiToggle) {
+  console.error('❌ ไม่เจอปุ่ม globalMenuBtn!');
+  
+  // สร้างปุ่มใหม่ถ้าไม่เจอ
+  const newBtn = document.createElement('button');
+  newBtn.id = 'globalMenuBtn';
+  newBtn.textContent = '☰';
+  newBtn.style.cssText = `
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    width: 48px !important;
+    height: 48px !important;
+    z-index: 2147483647 !important;
+    background: rgba(0,0,0,0.45) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-size: 24px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  `;
+  document.body.insertBefore(newBtn, document.body.firstChild);
+  
+  // อัปเดตตัวแปร
+  const uiToggle = newBtn;
+  console.log('✅ สร้างปุ่มใหม่แล้ว:', uiToggle);
+} else {
+  console.log('✅ เจอปุ่ม globalMenuBtn แล้ว:', uiToggle);
+}
 const miniScore = document.getElementById('miniScore');
 const miniScoreValue = document.getElementById('miniScoreValue');
 const achievementBtn = document.getElementById('achievementBtn');
@@ -1301,6 +1336,8 @@ function notifyPayment() {
 }
 
 uiToggle.addEventListener('click', () => {
+  console.log('🎯 Global Menu Button clicked!'); // Debug log
+  
   const collapsed = uiPanel.classList.toggle('collapsed');
 
   if (collapsed) {

@@ -1287,8 +1287,6 @@ function downloadGameScreenshot() {
     URL.revokeObjectURL(url);
   }, 'image/png');
 }
-
-// ===== Share Score (Smart Share) =====
 shareBtn.addEventListener('click', async () => {
   const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})! 🎮🔥`;
   const url = 'https://snakevsmonster-game.onrender.com';
@@ -1822,11 +1820,16 @@ async function submitScore() {
       localStorage.setItem("snakePlayerName", name);
     }
 
-    // ส่งข้อมูลครบถ้วน
-    const gameData = {
+    // ส่งข้อมูลแบบเดิมก่อน (Backward Compatible)
+    const basicData = {
       name, 
       score, 
-      mode: difficulty,
+      mode: difficulty
+    };
+
+    // ข้อมูลเพิ่มเติมสำหรับ backend ใหม่ (ถ้ารองรับ)
+    const enhancedData = {
+      ...basicData,
       playTime: gamePlayTime,           // เวลาเล่น (วินาที)
       monstersKilled: monstersKilled,   // จำนวนมอนสเตอร์ที่ฆ่า
       maxKillCombo: maxKillCombo,       // คอมโบการฆ่าสูงสุด
@@ -1835,11 +1838,22 @@ async function submitScore() {
       timestamp: new Date().toISOString()
     };
 
-    await fetch(`${SCORE_API_BASE}/scores`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(gameData),
-    });
+    // ลองส่งข้อมูลเพิ่มเติมก่อน ถ้าไม่ได้ให้ส่งแบบเดิม
+    try {
+      await fetch(`${SCORE_API_BASE}/scores`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(enhancedData),
+      });
+    } catch (enhancedError) {
+      console.log("Enhanced API not available, falling back to basic API");
+      // Fallback: ส่งข้อมูลแบบเดิม
+      await fetch(`${SCORE_API_BASE}/scores`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(basicData),
+      });
+    }
 
     loadLeaderboard();
   } catch (e) {

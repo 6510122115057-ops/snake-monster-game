@@ -459,7 +459,7 @@
 
     @media (max-width: 700px) {
   .share-pill {
-    bottom: 140px;
+    bottom: 200px; /* เลื่อนขึ้นมาให้ไม่ทับปุ่มควบคุม */
   }
 }
 
@@ -631,8 +631,8 @@
     @media (max-width: 700px) {
       body {
         justify-content:flex-start;
-        padding-top: 80px;
-        padding-bottom: 200px; /* เพิ่มพื้นที่ให้ปุ่มจอยสติ๊ก */
+        padding-top: 20px; /* ลดพื้นที่ด้านบน */
+        padding-bottom: 160px; /* ลดพื้นที่ด้านล่าง */
       }
 
       .ui {
@@ -662,14 +662,45 @@
 
       .touch-controls-wrapper {
         display: flex; /* แสดงบนมือถือ */
-        bottom: 24px;
+        bottom: 50px; /* เลื่อนขึ้นมาให้ไม่โดนขีด 3 ขีด */
         left: 50%;
         right: auto;
         transform: translateX(-50%);
       }
       
       #game {
-        margin-bottom: 20px; /* เว้นระยะห่างจากจอยสติ๊ก */
+        /* 📱 ขนาดเกมใหญ่ขึ้นบนมือถือ */
+        width: min(85vh, 95vw) !important;
+        height: min(85vh, 95vw) !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin-bottom: 20px;
+        border-radius: 8px; /* มุมโค้งน้อยลง */
+      }
+    }
+
+    /* ---------- มุมมองสำหรับมือถือหน้าจอเล็ก ---------- */
+    @media (max-width: 480px) {
+      body {
+        padding-top: 10px;
+        padding-bottom: 180px; /* เพิ่มพื้นที่ด้านล่างให้มากขึ้น */
+      }
+      
+      #game {
+        /* 📱 ใช้พื้นที่เกือบเต็มหน้าจอ */
+        width: min(90vh, 98vw) !important;
+        height: min(90vh, 98vw) !important;
+        border-radius: 4px;
+      }
+      
+      .touch-controls-wrapper {
+        bottom: 80px; /* เลื่อนปุ่มขึ้นมาให้ไม่โดนขีด 3 ขีด */
+      }
+      
+      .touch-btn {
+        width: 70px !important;
+        height: 70px !important;
+        font-size: 28px !important;
       }
     }
 

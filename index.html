@@ -459,7 +459,7 @@
 
     @media (max-width: 700px) {
   .share-pill {
-    bottom: 140px;
+    bottom: 200px; /* เลื่อนขึ้นมาให้ไม่ทับปุ่มควบคุม */
   }
 }
 
@@ -662,7 +662,7 @@
 
       .touch-controls-wrapper {
         display: flex; /* แสดงบนมือถือ */
-        bottom: 24px;
+        bottom: 50px; /* เลื่อนขึ้นมาให้ไม่โดนขีด 3 ขีด */
         left: 50%;
         right: auto;
         transform: translateX(-50%);
@@ -683,7 +683,7 @@
     @media (max-width: 480px) {
       body {
         padding-top: 10px;
-        padding-bottom: 140px;
+        padding-bottom: 180px; /* เพิ่มพื้นที่ด้านล่างให้มากขึ้น */
       }
       
       #game {
@@ -694,7 +694,7 @@
       }
       
       .touch-controls-wrapper {
-        bottom: 10px;
+        bottom: 80px; /* เลื่อนปุ่มขึ้นมาให้ไม่โดนขีด 3 ขีด */
       }
       
       .touch-btn {
@@ -1287,6 +1287,8 @@ function downloadGameScreenshot() {
     URL.revokeObjectURL(url);
   }, 'image/png');
 }
+
+// ===== Share Score (Smart Share) =====
 shareBtn.addEventListener('click', async () => {
   const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})! 🎮🔥`;
   const url = 'https://snakevsmonster-game.onrender.com';
@@ -1820,16 +1822,11 @@ async function submitScore() {
       localStorage.setItem("snakePlayerName", name);
     }
 
-    // ส่งข้อมูลแบบเดิมก่อน (Backward Compatible)
-    const basicData = {
+    // ส่งข้อมูลครบถ้วน
+    const gameData = {
       name, 
       score, 
-      mode: difficulty
-    };
-
-    // ข้อมูลเพิ่มเติมสำหรับ backend ใหม่ (ถ้ารองรับ)
-    const enhancedData = {
-      ...basicData,
+      mode: difficulty,
       playTime: gamePlayTime,           // เวลาเล่น (วินาที)
       monstersKilled: monstersKilled,   // จำนวนมอนสเตอร์ที่ฆ่า
       maxKillCombo: maxKillCombo,       // คอมโบการฆ่าสูงสุด
@@ -1838,22 +1835,11 @@ async function submitScore() {
       timestamp: new Date().toISOString()
     };
 
-    // ลองส่งข้อมูลเพิ่มเติมก่อน ถ้าไม่ได้ให้ส่งแบบเดิม
-    try {
-      await fetch(`${SCORE_API_BASE}/scores`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(enhancedData),
-      });
-    } catch (enhancedError) {
-      console.log("Enhanced API not available, falling back to basic API");
-      // Fallback: ส่งข้อมูลแบบเดิม
-      await fetch(`${SCORE_API_BASE}/scores`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(basicData),
-      });
-    }
+    await fetch(`${SCORE_API_BASE}/scores`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(gameData),
+    });
 
     loadLeaderboard();
   } catch (e) {

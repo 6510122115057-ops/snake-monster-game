@@ -135,38 +135,7 @@
       visibility: hidden;
     }
 
-    .ui-toggle {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 24px;
-      width: 50px;
-      height: 50px;
-      cursor: pointer;
-      z-index: 2147483647; /* ค่าสูงสุดที่ browser รองรับ */
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      touch-action: manipulation; /* ป้องกันปัญหา touch */
-      -webkit-tap-highlight-color: transparent; /* ลบ highlight บน iOS */
-    }
 
-    .ui-toggle:hover {
-      background: rgba(255,255,255,0.3);
-      transform: scale(1.1);
-    }
-
-    .ui-toggle.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
 
     .mini-score {
       position: fixed;
@@ -663,16 +632,6 @@
         display: none;
       }
 
-      .ui-toggle {
-        position: fixed;
-        top: 8px;
-        left: 8px;
-        z-index: 2147483647; /* สูงสุด */
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
-      }
-
       .mini-score {
         display: none !important;
       }
@@ -753,11 +712,6 @@
         border-radius: 14px !important;
       }
       
-      .ui-toggle {
-        width: 44px;
-        height: 44px;
-        font-size: 18px;
-      }
     }
 
     /* 🔄 Landscape Mode สำหรับมือถือ */
@@ -818,6 +772,89 @@
 </head>
 <body>
 
+<!-- 🎯 GLOBAL MENU BUTTON - อยู่บนสุดของ body แยกจาก layout ทั้งหมด -->
+<button id="globalMenuBtn">☰</button>
+
+<style>
+/* 🛡️ ป้องกัน Canvas + Overlay ดูด touch event */
+#game, .touch-controls-wrapper {
+  pointer-events: auto;
+}
+
+.achievement-modal, .share-modal, .unlock-modal {
+  pointer-events: auto;
+}
+
+/* 🎯 GLOBAL MENU BUTTON - แยก stacking context สมบูรณ์ */
+#globalMenuBtn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 48px;
+  height: 48px;
+  
+  /* 💥 z-index สูงสุด + แยก context */
+  z-index: 2147483647;
+  isolation: isolate; /* คำสั่งแยกโลก - แก้ปัญหา stacking context */
+  
+  /* 🎨 สไตล์ */
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  border: none;
+  
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* 📱 Mobile optimized */
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  
+  /* 🎭 Hover effects */
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+#globalMenuBtn:hover {
+  background: rgba(0,0,0,0.65);
+  transform: scale(1.05);
+}
+
+#globalMenuBtn:active {
+  transform: scale(0.95);
+}
+
+/* 📱 Mobile adjustments */
+@media (max-width: 768px) {
+  #globalMenuBtn {
+    top: 8px;
+    left: 8px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 360px) {
+  #globalMenuBtn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}
+</style>
+<body>
+
+<!-- 🎯 GLOBAL MENU BUTTON - อยู่บนสุดของ body แยกจาก layout ทั้งหมด -->
+<button id="globalMenuBtn">☰</button>
+
 <!-- เพลงพื้นหลัง (ใส่ไฟล์ bgm.mp3 ในโฟลเดอร์เดียวกับไฟล์นี้) -->
 <audio id="bgm" src="bgm.mp3" loop></audio>
 
@@ -848,9 +885,6 @@
     </div>
   </div>
 </div>
-
-<!-- ปุ่มเปิด/ปิด UI Panel -->
-<button class="ui-toggle" id="uiToggle">✕</button>
 
 <!-- ปุ่มดู Achievement -->
 <button class="achievement-btn" id="achievementBtn">🏆</button>
@@ -1010,7 +1044,7 @@ const comboDisplay = document.getElementById('comboDisplay');
 const comboCount = document.getElementById('comboCount');
 const streakDisplay = document.getElementById('streakCount');
 const uiPanel = document.getElementById('uiPanel');
-const uiToggle = document.getElementById('uiToggle');
+const uiToggle = document.getElementById('globalMenuBtn');
 const miniScore = document.getElementById('miniScore');
 const miniScoreValue = document.getElementById('miniScoreValue');
 const achievementBtn = document.getElementById('achievementBtn');

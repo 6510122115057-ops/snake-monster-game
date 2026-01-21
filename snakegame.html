@@ -760,8 +760,12 @@
 <div class="ui" id="uiPanel">
   Score: <span id="score">0</span><br>
   High Score: <span id="highScore">0</span><br>
+  Monsters Killed: <span id="monstersKilled">0</span><br>
   <div id="comboDisplay" style="display:none; margin-top:5px; font-size:16px; color:#ffeb3b; font-weight:bold; text-shadow: 0 0 10px #ffeb3b;">
     🔥 COMBO x<span id="comboCount">0</span>
+  </div>
+  <div id="killComboDisplay" style="display:none; margin-top:5px; font-size:14px; color:#00d4ff; font-weight:bold; text-shadow: 0 0 10px #00d4ff;">
+    ❄️ Kill Combo: <span id="killComboCount">0</span>
   </div>
   <div id="streakDisplay" style="margin-top:5px; font-size:13px; opacity:0.9;">
     🔥 Streak: <span id="streakCount">0</span> วัน
@@ -873,6 +877,9 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const highScoreEl = document.getElementById('highScore');
+const monstersKilledEl = document.getElementById('monstersKilled');
+const killComboCountEl = document.getElementById('killComboCount');
+const killComboDisplayEl = document.getElementById('killComboDisplay');
 const restartBtn = document.getElementById('restart');
 const diffBtns = document.querySelectorAll('.diff-btn');
 const touchBtns = document.querySelectorAll('.touch-btn');
@@ -1199,6 +1206,57 @@ achievementModal.addEventListener('click', (e) => {
   }
 });
 
+// ฟังก์ชันแชร์ภาพหน้าจอเกมจริง
+async function shareGameOverImage() {
+  try {
+    // ใช้ canvas ของเกมโดยตรง
+    const blob = await new Promise(resolve => {
+      canvas.toBlob(resolve, 'image/png');
+    });
+    
+    // สร้าง File object
+    const file = new File([blob], `snake-game-over-${score}.png`, { type: 'image/png' });
+    
+    // ใช้ Web Share API
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: 'Snake vs Monster - Game Over',
+        text: `🐍 ได้ ${score} คะแนนในเกม Snake vs Monster! เล่นด้วยกันไหม?`,
+        files: [file]
+      });
+    } else if (navigator.share) {
+      // ถ้าแชร์ไฟล์ไม่ได้ แต่แชร์ข้อความได้
+      await navigator.share({
+        title: 'Snake vs Monster - Game Over',
+        text: `🐍 ได้ ${score} คะแนนในเกม Snake vs Monster! เล่นด้วยกันไหม?`,
+        url: 'https://snakevsmonster-game.onrender.com'
+      });
+    } else {
+      // fallback: ดาวน์โหลดภาพ
+      downloadGameScreenshot();
+    }
+  } catch (error) {
+    console.log('Share cancelled or failed:', error);
+    // fallback: ดาวน์โหลดภาพ
+    downloadGameScreenshot();
+  }
+}
+
+// ฟังก์ชันดาวน์โหลดภาพหน้าจอเกม
+function downloadGameScreenshot() {
+  // ใช้ canvas ของเกมโดยตรง
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snake-game-over-${score}-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
 // ===== Share Score (Smart Share) =====
 shareBtn.addEventListener('click', async () => {
   const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})! 🎮🔥`;
@@ -1523,6 +1581,11 @@ let combo = 0;
 let comboTimer = 0;
 let maxCombo = 0;
 
+// ===== ระบบนับมอนสเตอร์ที่ฆ่า =====
+let monstersKilled = 0;
+let killCombo = 0;
+let maxKillCombo = 0;
+
 // ===== Achievement System =====
 let achievements = {
   firstKill: false,
@@ -1535,6 +1598,14 @@ let achievements = {
 };
 let achievementQueue = [];
 let gameStartTime = 0;
+let gamePlayTime = 0; // เวลาเล่นทั้งหมด (วินาที)
+
+// ฟังก์ชันแปลงเวลาเป็นรูปแบบ mm:ss
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
 
 // ===== Streak System =====
 let dailyStreak = parseInt(localStorage.getItem('snakeDailyStreak') || '0');
@@ -1720,10 +1791,23 @@ async function submitScore() {
       localStorage.setItem("snakePlayerName", name);
     }
 
+    // ส่งข้อมูลครบถ้วน
+    const gameData = {
+      name, 
+      score, 
+      mode: difficulty,
+      playTime: gamePlayTime,           // เวลาเล่น (วินาที)
+      monstersKilled: monstersKilled,   // จำนวนมอนสเตอร์ที่ฆ่า
+      maxKillCombo: maxKillCombo,       // คอมโบการฆ่าสูงสุด
+      maxFoodCombo: maxCombo,           // คอมโบอาหารสูงสุด
+      theme: currentTheme,              // ธีมที่ใช้
+      timestamp: new Date().toISOString()
+    };
+
     await fetch(`${SCORE_API_BASE}/scores`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, score, mode: difficulty }),
+      body: JSON.stringify(gameData),
     });
 
     loadLeaderboard();
@@ -1757,7 +1841,18 @@ function resetGame(){
   nextFreezeScore = 100;
   scoreEl.textContent = score;
   miniScoreValue.textContent = score;
+  
+  // รีเซ็ตสถิติมอนสเตอร์
+  monstersKilled = 0;
+  killCombo = 0;
+  monstersKilledEl.textContent = monstersKilled;
+  killComboCountEl.textContent = killCombo;
+  killComboDisplayEl.style.display = 'none'; // ซ่อน Kill Combo Display
   running = true;
+  
+  // เริ่มนับเวลา
+  gameStartTime = Date.now();
+  gamePlayTime = 0;
   monsterMoveCounter = 0;
   clearInterval(tickInterval);
   tickInterval = setInterval(gameTick, difficultySettings[difficulty].snakeSpeed);
@@ -1976,6 +2071,20 @@ function gameTick(){
         scoreEl.textContent = score;
         miniScoreValue.textContent = score;
 
+        // นับมอนสเตอร์ที่ฆ่าและคอมโบ
+        monstersKilled++;
+        killCombo++;
+        if (killCombo > maxKillCombo) maxKillCombo = killCombo;
+
+        // อัปเดต UI
+        monstersKilledEl.textContent = monstersKilled;
+        killComboCountEl.textContent = killCombo;
+        
+        // แสดง Kill Combo Display เมื่อมีการฆ่า
+        if (killCombo > 0) {
+          killComboDisplayEl.style.display = 'block';
+        }
+
         // Achievement: ฆ่ามอนสเตอร์ตัวแรก
         if (!achievements.firstKill) {
           unlockAchievement('firstKill', 'First Blood!', 'ฆ่ามอนสเตอร์ตัวแรก');
@@ -2066,6 +2175,9 @@ function gameTick(){
     freezeDuration--;
     if(freezeDuration <= 0){
       monstersFrozen = false;
+      killCombo = 0; // รีเซ็ตคอมโบการฆ่าเมื่อหมดเวลาแช่แข็ง
+      killComboCountEl.textContent = killCombo;
+      killComboDisplayEl.style.display = 'none'; // ซ่อน Kill Combo Display
     }
   }
   
@@ -2102,6 +2214,12 @@ function gameTick(){
 
 function gameOver(){
   running = false;
+  
+  // คำนวณเวลาเล่น
+  if (gameStartTime > 0) {
+    gamePlayTime = Math.floor((Date.now() - gameStartTime) / 1000); // แปลงเป็นวินาที
+  }
+  
   if (score > highScore) {
     highScore = score;
     highScoreEl.textContent = highScore;
@@ -2150,14 +2268,84 @@ ctx.fillText(
   canvas.height/2 + 50
 );
 
-// แสดงสถิติ
-ctx.font = "14px sans-serif";
-ctx.fillStyle = "#aaa";
+// ปุ่มแชร์ภาพ Game Over
+ctx.font = "16px sans-serif";
+ctx.fillStyle = "#4CAF50";
+ctx.shadowBlur = 8;
+ctx.shadowColor = "#4CAF50";
 ctx.fillText(
-  `Max Combo: ${maxCombo}x`,
+  "📸 Click here to share this result as image",
   canvas.width/2,
-  canvas.height/2 + 75
+  canvas.height/2 + 320
 );
+
+// แสดงสถิติมอนสเตอร์และข้อมูลเกม
+ctx.save();
+
+// === กล่องสถิติหลัก ===
+const boxWidth = 320;
+const boxHeight = 200;
+const boxX = canvas.width/2 - boxWidth/2;
+const boxY = canvas.height/2 + 90; // เลื่อนลงมาเพิ่ม
+
+// พื้นหลังกล่องแบบ gradient
+const boxGradient = ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxHeight);
+boxGradient.addColorStop(0, 'rgba(255,255,255,0.15)');
+boxGradient.addColorStop(1, 'rgba(255,255,255,0.05)');
+ctx.fillStyle = boxGradient;
+ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+// กรอบกล่อง
+ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+ctx.lineWidth = 2;
+ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+// === สถิติแต่ละบรรทัด ===
+const startY = boxY + 30;
+const lineHeight = 28;
+let currentY = startY;
+
+// 🏆 Final Score
+ctx.font = "bold 20px sans-serif";
+ctx.fillStyle = "#FFD700";
+ctx.textAlign = "center";
+ctx.shadowBlur = 10;
+ctx.shadowColor = "#FFD700";
+ctx.fillText(`🏆 Final Score: ${score}`, canvas.width/2, currentY);
+currentY += lineHeight + 5;
+
+// ⏱️ Play Time
+ctx.font = "bold 18px sans-serif";
+ctx.fillStyle = "#90EE90";
+ctx.shadowBlur = 8;
+ctx.shadowColor = "#90EE90";
+ctx.fillText(`⏱️ Play Time: ${formatTime(gamePlayTime)}`, canvas.width/2, currentY);
+currentY += lineHeight;
+
+// 👹 Monsters Killed
+ctx.font = "16px sans-serif";
+ctx.fillStyle = "#FF6B6B";
+ctx.shadowBlur = 6;
+ctx.shadowColor = "#FF6B6B";
+ctx.fillText(`👹 Monsters Killed: ${monstersKilled}`, canvas.width/2, currentY);
+currentY += lineHeight - 2;
+
+// ❄️ Max Kill Combo
+ctx.fillStyle = "#00D4FF";
+ctx.shadowBlur = 6;
+ctx.shadowColor = "#00D4FF";
+ctx.fillText(`❄️ Max Kill Combo: ${maxKillCombo}x`, canvas.width/2, currentY);
+currentY += lineHeight;
+
+// 🔥 Max Food Combo (ถ้ามี)
+if (maxCombo > 0) {
+  ctx.fillStyle = "#FFEB3B";
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = "#FFEB3B";
+  ctx.fillText(`🔥 Max Food Combo: ${maxCombo}x`, canvas.width/2, currentY);
+}
+
+ctx.restore();
 
 }
   
@@ -2307,6 +2495,24 @@ function draw(){
     ctx.beginPath();
     ctx.arc(cx, cy + 4, 5, 0, Math.PI);
     ctx.stroke();
+
+    // ⏰ เวลานับถอยหลังตรงหัวงู (เมื่อมอนสเตอร์ถูกแช่แข็ง)
+    if (monstersFrozen) {
+      const timeLeft = (freezeDuration / 10).toFixed(1);
+      ctx.save();
+      ctx.fillStyle = theme.freezeItem;
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = theme.freezeItem;
+      
+      // เอฟเฟกต์กระพริบเล็กน้อย
+      const alpha = 0.8 + 0.2 * Math.sin(Date.now() * 0.015);
+      ctx.globalAlpha = alpha;
+      
+      ctx.fillText(timeLeft + "s", cx, cy - 15);
+      ctx.restore();
+    }
   }
 }
 
@@ -2329,6 +2535,29 @@ floatingTexts.forEach(t => {
   ctx.textAlign = "center";
   ctx.fillText(t.text, t.x, t.y);
 });
+
+// ❄️ Attack Monsters Message (เมื่อมอนสเตอร์ถูกแช่แข็ง)
+if (monstersFrozen) {
+  ctx.save();
+  ctx.fillStyle = theme.freezeItem;
+  ctx.font = "bold 24px sans-serif";
+  ctx.textAlign = "center";
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = theme.freezeItem;
+  
+  // เอฟเฟกต์กระพริบ
+  const alpha = 0.7 + 0.3 * Math.sin(Date.now() * 0.01);
+  ctx.globalAlpha = alpha;
+  
+  ctx.fillText("ATTACK MONSTERS!", canvas.width/2, 40);
+  
+  // เวลานับถอยหลัง
+  const timeLeft = (freezeDuration / 10).toFixed(1); // แสดงทศนิยม 1 ตำแหน่ง
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText(`Time: ${timeLeft}s`, canvas.width/2, 70);
+  
+  ctx.restore();
+}
 
 }
 
@@ -2408,9 +2637,29 @@ restartBtn.addEventListener('click', () => {
   resetGame();
 });
 
-// คลิกที่ canvas ตอน Game Over ก็รีสตาร์ทได้
-canvas.addEventListener('click', () => {
+// คลิกที่ canvas ตอน Game Over
+canvas.addEventListener('click', (e) => {
   if (!running) {
+    // คำนวณตำแหน่งคลิก
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // ปรับตามขนาดจริงของ canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clickX = x * scaleX;
+    const clickY = y * scaleY;
+    
+    // ตรวจสอบว่าคลิกที่ปุ่มแชร์ภาพหรือไม่
+    const shareButtonY = canvas.height/2 + 320;
+    if (clickY >= shareButtonY - 15 && clickY <= shareButtonY + 15) {
+      // คลิกที่ปุ่มแชร์ภาพ
+      shareGameOverImage();
+      return;
+    }
+    
+    // คลิกที่อื่น = รีสตาร์ท
     startBgm();
     resetGame();
   }

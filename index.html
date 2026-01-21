@@ -1874,6 +1874,18 @@ gameStartTime = Date.now();
 
 }
 
+// 🚫 ฟังก์ชันตรวจสอบว่าตำแหน่งอยู่หน้างูหรือไม่
+function isInSnakePath(x, y, headX, headY, dirX, dirY, distance) {
+  for (let i = 1; i <= distance; i++) {
+    const checkX = (headX + dirX * i + COLS) % COLS;
+    const checkY = (headY + dirY * i + ROWS) % ROWS;
+    if (x === checkX && y === checkY) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function spawnMonsters(){
   monster = [];
   const count = difficultySettings[difficulty].monsterCount;
@@ -1890,6 +1902,10 @@ function spawnMonsters(){
       }
 
       const distanceFromSnake = Math.abs(m.x - headPos.x) + Math.abs(m.y - headPos.y);
+      
+      // 🚫 ป้องกันการเกิดหน้างูโดยตรง (2-3 บล็อค)
+      const isInFrontOfSnake = isInSnakePath(m.x, m.y, headPos.x, headPos.y, dir.x, dir.y, 3);
+      
       let farFromOthers = true;
       for(let j = 0; j < monster.length; j++){
         const dist = Math.abs(m.x - monster[j].x) + Math.abs(m.y - monster[j].y);
@@ -1902,6 +1918,7 @@ function spawnMonsters(){
       if (!snake.some(s => s.x===m.x && s.y===m.y) &&
           (food.x !== m.x || food.y !== m.y) &&
           distanceFromSnake > 5 &&
+          !isInFrontOfSnake &&
           farFromOthers) {
         monster.push(m);
         break;
@@ -1920,11 +1937,15 @@ function spawnExtraMonster() {
     };
 
     const dist = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
+    
+    // 🚫 ป้องกันการเกิดหน้างูโดยตรง (2-3 บล็อค)
+    const isInFrontOfSnake = isInSnakePath(m.x, m.y, snake[0].x, snake[0].y, dir.x, dir.y, 3);
 
     if (
       !snake.some(s => s.x === m.x && s.y === m.y) &&
       !monster.some(o => o.x === m.x && o.y === m.y) &&
-      dist > 6
+      dist > 6 &&
+      !isInFrontOfSnake
     ) {
       monster.push(m);
       break;
@@ -1950,11 +1971,15 @@ function updateHardMonstersByScore() {
         y: Math.floor(Math.random() * ROWS),
       };
       const dist = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
+      
+      // 🚫 ป้องกันการเกิดหน้างูโดยตรง (2-3 บล็อค)
+      const isInFrontOfSnake = isInSnakePath(m.x, m.y, snake[0].x, snake[0].y, dir.x, dir.y, 3);
 
       if (
         !snake.some(s => s.x === m.x && s.y === m.y) &&
         !monster.some(o => o.x === m.x && o.y === m.y) &&
-        dist > 6
+        dist > 6 &&
+        !isInFrontOfSnake
       ) {
         monster.push(m);
         break;
@@ -2027,19 +2052,32 @@ function moveMonsters(){
       }
     });
 
+    // 🎯 คำนวณตำแหน่งใหม่
+    let newX = m.x;
+    let newY = m.y;
+
     if (Math.abs(dx) > Math.abs(dy)) {
-      m.x += dx > 0 ? 1 : -1;
+      newX += dx > 0 ? 1 : -1;
     } else {
-      m.y += dy > 0 ? 1 : -1;
+      newY += dy > 0 ? 1 : -1;
     }
 
     if (tooClose) {
-      if (Math.random() > 0.5) m.x += Math.random() > 0.5 ? 1 : -1;
-      else m.y += Math.random() > 0.5 ? 1 : -1;
+      if (Math.random() > 0.5) newX += Math.random() > 0.5 ? 1 : -1;
+      else newY += Math.random() > 0.5 ? 1 : -1;
     }
 
-    m.x = (m.x + COLS) % COLS;
-    m.y = (m.y + ROWS) % ROWS;
+    // 🚫 ป้องกันการทับตัวงู - ถ้าตำแหน่งใหม่ทับงู ให้อยู่ที่เดิม
+    newX = (newX + COLS) % COLS;
+    newY = (newY + ROWS) % ROWS;
+    
+    const wouldCollideWithSnake = snake.some(s => s.x === newX && s.y === newY);
+    
+    if (!wouldCollideWithSnake) {
+      m.x = newX;
+      m.y = newY;
+    }
+    // ถ้าทับงู ให้อยู่ที่เดิม (ไม่เคลื่อนที่)
   });
 }
 

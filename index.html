@@ -84,11 +84,16 @@
       image-rendering:pixelated;
       border-radius:12px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      
+      /* 🖥️ Desktop: ใช้ขนาดเดิม */
       width: min(80vh, 70vw);
       height: min(80vh, 70vw);
-
       max-width: 600px;
       max-height: 600px;
+      
+      /* 📱 Mobile: จะถูก override ใน media query */
+      aspect-ratio: 1 / 1; /* รักษาสัดส่วนสี่เหลี่ยมจัตุรัส */
+      touch-action: manipulation; /* ป้องกัน canvas ดูด touch event */
 }
 
     .ui {
@@ -131,6 +136,7 @@
     }
 
     .ui-toggle {
+      position: fixed;
       top: 20px;
       left: 20px;
       background: rgba(255,255,255,0.2);
@@ -142,12 +148,14 @@
       width: 50px;
       height: 50px;
       cursor: pointer;
-      z-index: 99999; /* เลเยอร์บนสุด */
+      z-index: 2147483647; /* ค่าสูงสุดที่ browser รองรับ */
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
       justify-content: center;
       user-select: none;
+      touch-action: manipulation; /* ป้องกันปัญหา touch */
+      -webkit-tap-highlight-color: transparent; /* ลบ highlight บน iOS */
     }
 
     .ui-toggle:hover {
@@ -457,11 +465,13 @@
       background: #34a853;
     }
 
-    @media (max-width: 700px) {
-  .share-pill {
-    bottom: 200px; /* เลื่อนขึ้นมาให้ไม่ทับปุ่มควบคุม */
-  }
-}
+    @media (max-width: 768px) {
+      .share-pill {
+        bottom: 160px; /* เลื่อนขึ้นให้ไม่ทับปุ่มควบคุม */
+        right: 12px;
+        z-index: 1001;
+      }
+    }
 
     .difficulty {
       margin-top: 10px;
@@ -627,22 +637,26 @@
       animation: hitFlash 0.35s ease-out;
     }
 
-    /* ---------- มุมมองสำหรับมือถือ ---------- */
-    @media (max-width: 700px) {
+    /* ========== 📱 MOBILE LAYOUT OPTIMIZATION ========== */
+    
+    /* 📱 Tablet และ Mobile ขนาดใหญ่ (768px ลงมา) */
+    @media (max-width: 768px) {
       body {
-        justify-content:flex-start;
-        padding-top: 20px; /* ลดพื้นที่ด้านบน */
-        padding-bottom: 160px; /* ลดพื้นที่ด้านล่าง */
+        justify-content: flex-start;
+        padding: 60px 8px 180px 8px; /* เผื่อพื้นที่ UI บน/ล่าง */
+        min-height: 100vh;
+        overflow-x: hidden;
       }
 
       .ui {
         position: static;
-        margin: 0 16px 16px;
-        width: calc(100% - 32px);
+        margin: 0 auto 16px auto;
+        width: min(100%, 420px);
         max-width: 420px;
         transform: none !important;
         opacity: 1 !important;
         pointer-events: all !important;
+        font-size: 16px; /* ขนาดฟอนต์เหมาะสมบนมือถือ */
       }
 
       .ui.collapsed {
@@ -651,9 +665,12 @@
 
       .ui-toggle {
         position: fixed;
-        top: 10px;
-        left: 10px;
-        z-index: 1001;
+        top: 8px;
+        left: 8px;
+        z-index: 2147483647; /* สูงสุด */
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
       }
 
       .mini-score {
@@ -661,46 +678,116 @@
       }
 
       .touch-controls-wrapper {
-        display: flex; /* แสดงบนมือถือ */
-        bottom: 50px; /* เลื่อนขึ้นมาให้ไม่โดนขีด 3 ขีด */
+        display: flex;
+        position: fixed;
+        bottom: 20px;
         left: 50%;
-        right: auto;
         transform: translateX(-50%);
+        z-index: 1000;
       }
       
       #game {
-        /* 📱 ขนาดเกมใหญ่ขึ้นบนมือถือ */
-        width: min(85vh, 95vw) !important;
-        height: min(85vh, 95vw) !important;
-        max-width: none !important;
-        max-height: none !important;
-        margin-bottom: 20px;
-        border-radius: 8px; /* มุมโค้งน้อยลง */
+        /* 📐 คำนวณขนาดที่เหมาะสม: หักพื้นที่ UI + ปุ่ม */
+        width: min(calc(100vw - 16px), calc(100vh - 240px));
+        height: min(calc(100vw - 16px), calc(100vh - 240px));
+        max-width: none;
+        max-height: none;
+        margin: 0 auto 16px auto;
+        border-radius: 8px;
+        display: block;
       }
     }
 
-    /* ---------- มุมมองสำหรับมือถือหน้าจอเล็ก ---------- */
+    /* 📱 Mobile ขนาดกลาง (480px ลงมา) */
     @media (max-width: 480px) {
       body {
-        padding-top: 10px;
-        padding-bottom: 180px; /* เพิ่มพื้นที่ด้านล่างให้มากขึ้น */
+        padding: 50px 4px 160px 4px;
+      }
+      
+      .ui {
+        font-size: 15px;
+        padding: 12px 16px 20px;
       }
       
       #game {
-        /* 📱 ใช้พื้นที่เกือบเต็มหน้าจอ */
-        width: min(90vh, 98vw) !important;
-        height: min(90vh, 98vw) !important;
-        border-radius: 4px;
+        /* 📐 ใช้พื้นที่สูงสุดบนหน้าจอเล็ก */
+        width: min(calc(100vw - 8px), calc(100vh - 210px));
+        height: min(calc(100vw - 8px), calc(100vh - 210px));
+        border-radius: 6px;
       }
       
       .touch-controls-wrapper {
-        bottom: 80px; /* เลื่อนปุ่มขึ้นมาให้ไม่โดนขีด 3 ขีด */
+        bottom: 12px;
       }
       
       .touch-btn {
-        width: 70px !important;
-        height: 70px !important;
-        font-size: 28px !important;
+        width: 64px !important;
+        height: 64px !important;
+        font-size: 24px !important;
+        border-radius: 16px !important;
+      }
+    }
+
+    /* 📱 Mobile ขนาดเล็ก (360px ลงมา) */
+    @media (max-width: 360px) {
+      body {
+        padding: 45px 2px 150px 2px;
+      }
+      
+      .ui {
+        font-size: 14px;
+        padding: 10px 12px 16px;
+      }
+      
+      #game {
+        /* 📐 ขนาดสำหรับหน้าจอเล็กมาก */
+        width: min(calc(100vw - 4px), calc(100vh - 195px));
+        height: min(calc(100vw - 4px), calc(100vh - 195px));
+        border-radius: 4px;
+      }
+      
+      .touch-btn {
+        width: 56px !important;
+        height: 56px !important;
+        font-size: 20px !important;
+        border-radius: 14px !important;
+      }
+      
+      .ui-toggle {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+      }
+    }
+
+    /* 🔄 Landscape Mode สำหรับมือถือ */
+    @media (max-width: 768px) and (orientation: landscape) {
+      body {
+        padding: 8px 60px 8px 60px;
+        flex-direction: row;
+        align-items: flex-start;
+      }
+      
+      .ui {
+        position: fixed;
+        top: 8px;
+        right: 8px;
+        width: 280px;
+        max-height: calc(100vh - 16px);
+        overflow-y: auto;
+        margin: 0;
+      }
+      
+      #game {
+        width: min(calc(100vh - 16px), calc(100vw - 300px));
+        height: min(calc(100vh - 16px), calc(100vw - 300px));
+        margin: 8px;
+      }
+      
+      .touch-controls-wrapper {
+        bottom: 8px;
+        left: 8px;
+        transform: none;
       }
     }
 

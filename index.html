@@ -540,7 +540,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
+      z-index: 99999; /* เลเยอร์บนสุด */
       display: none; /* ซ่อนบน PC */
     }
 
@@ -570,6 +570,8 @@
       box-shadow: 0 4px 14px rgba(0,0,0,0.35);
       transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
       touch-action: manipulation;
+      z-index: 99999; /* เลเยอร์บนสุด */
+      position: relative;
     }
 
     .touch-btn:active {
@@ -666,6 +668,11 @@
         left: 50%;
         right: auto;
         transform: translateX(-50%);
+        z-index: 99999; /* เลเยอร์บนสุด */
+        background: rgba(0,0,0,0.1); /* พื้นหลังเบาๆ */
+        border-radius: 20px;
+        padding: 10px;
+        backdrop-filter: blur(10px);
       }
       
       #game {
@@ -695,6 +702,11 @@
       
       .touch-controls-wrapper {
         bottom: 80px; /* เลื่อนปุ่มขึ้นมาให้ไม่โดนขีด 3 ขีด */
+        z-index: 99999; /* เลเยอร์บนสุด */
+        background: rgba(0,0,0,0.15); /* พื้นหลังเข้มขึ้นเล็กน้อย */
+        border-radius: 20px;
+        padding: 12px;
+        backdrop-filter: blur(15px);
       }
       
       .touch-btn {

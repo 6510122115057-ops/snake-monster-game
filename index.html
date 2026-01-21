@@ -1,0 +1,2752 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game with Monster</title>
+
+   <!-- ===== Open Graph สำหรับแชร์ ===== -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Snake vs Monster">
+  <meta property="og:description" content="🐍 Survive. Eat. Evolve. เกมงูปะทะมอนสเตอร์สุดมันส์!">
+  <meta property="og:url" content="https://snakevsmonster-game.onrender.com">
+  <meta property="og:site_name" content="Snake vs Monster">
+  <meta property="og:image" content="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
+  <meta name="twitter:title" content="Snake vs Monster">
+  <meta name="twitter:description" content="🐍 เกมงูปะทะมอนสเตอร์ เล่นฟรีบนเว็บ!">
+
+  <!-- favicon -->
+  <link rel="icon" type="image/png" sizes="32x32"
+        href="https://raw.githubusercontent.com/6510122115057-ops/snake-monster-game/main/cover.png">
+
+  <style>
+
+    .unlock-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 30000;
+}
+
+.unlock-modal.show {
+  display: flex;
+}
+
+.unlock-modal-content {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 30px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.unlock-modal-content button {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+    body {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      margin:0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:#fff;
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      box-sizing: border-box;
+    }
+
+    * {
+      box-sizing: inherit;
+    }
+
+    #game {
+      background:#1a1a2e;
+      image-rendering:pixelated;
+      border-radius:12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      width: min(80vh, 70vw);
+      height: min(80vh, 70vw);
+
+      max-width: 600px;
+      max-height: 600px;
+}
+
+    .ui {
+      position:fixed;
+      top:20px;
+      left:20px;
+      color:#fff;
+      font-size:18px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 15px 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      max-width: 280px;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 9999;
+      
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .ui::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .ui::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.35);
+      border-radius: 10px;
+    }
+
+    .ui::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .ui.collapsed {
+      transform: translateX(-350px);
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .ui-toggle {
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 24px;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      z-index: 10000;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .ui-toggle:hover {
+      background: rgba(255,255,255,0.3);
+      transform: scale(1.1);
+    }
+
+    .ui-toggle.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mini-score {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      padding: 10px 15px;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mini-score.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* Achievement Button */
+    .achievement-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 24px;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      z-index: 10000;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .achievement-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: scale(1.1);
+    }
+
+    /* Achievement Modal */
+    .achievement-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 20000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .achievement-modal.show {
+      display: flex;
+    }
+
+    .achievement-modal-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .achievement-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .achievement-item {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .achievement-item.locked {
+      opacity: 0.5;
+    }
+
+    .achievement-icon {
+      font-size: 40px;
+    }
+
+    .achievement-info {
+      flex: 1;
+    }
+
+    .achievement-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .achievement-desc {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    /* FPS Counter */
+    .fps-counter {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: #0f0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: bold;
+      z-index: 10000;
+      display: none;
+      line-height: 1.6;
+    }
+
+    .fps-counter.show {
+      display: block;
+    }
+
+    .fps-counter.good {
+      color: #0f0;
+    }
+
+    .fps-counter.medium {
+      color: #ff0;
+    }
+
+    .fps-counter.bad {
+      color: #f00;
+    }
+
+    .fps-label {
+      color: #888;
+      font-size: 11px;
+    }
+
+   /* ===== Share Pill Button (NEW) ===== */
+.share-pill {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 12px 18px;
+  border-radius: 999px;
+
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+
+  border: none;
+  cursor: pointer;
+
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.share-pill:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+
+.share-pill:active {
+  transform: scale(0.96);
+}
+
+.share-icon {
+  font-size: 18px;
+}
+
+    .share-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    /* Share Modal */
+    .share-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 20000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .share-modal.show {
+      display: flex;
+    }
+
+    .share-modal-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+      text-align: center;
+    }
+
+    .share-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+    }
+
+    .share-score-display {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 20px 0;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .share-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .share-social-btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .share-social-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .share-twitter {
+      background: #1DA1F2;
+    }
+
+    .share-facebook {
+      background: #4267B2;
+    }
+
+    .share-copy {
+      background: #34a853;
+    }
+
+    @media (max-width: 700px) {
+  .share-pill {
+    bottom: 140px;
+  }
+}
+
+    .difficulty {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .diff-btn {
+      margin: 5px 5px 0 0;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid transparent;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 13px;
+    }
+    .diff-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .diff-btn.active {
+      background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+      border-color: #4ecdc4;
+      box-shadow: 0 0 15px rgba(78,205,196,0.5);
+    }
+
+    .theme-btn {
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid transparent;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 12px;
+      flex: 1;
+      min-width: 80px;
+    }
+
+    .theme-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .theme-btn.active {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border-color: #f093fb;
+      box-shadow: 0 0 15px rgba(240,147,251,0.5);
+    }
+    button#restart {
+      margin-top:10px;
+      padding:8px 16px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border:none;
+      border-radius:8px;
+      color:#fff;
+      font-weight:bold;
+      cursor:pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-size:14px;
+      width: 100%;
+    }
+    button#restart:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245,87,108,0.4);
+    }
+    button#restart:active {
+      transform: translateY(0);
+    }
+
+    .touch-controls-wrapper {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      display: none; /* ซ่อนบน PC */
+    }
+
+    .touch-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .touch-controls-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .touch-btn {
+      width: 80px;
+      height: 80px;
+      font-size: 32px;
+      font-weight: bold;
+      border-radius: 20px;
+      border: none;
+      background: rgba(255,255,255,0.22);
+      color: white;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+      touch-action: manipulation;
+    }
+
+    .touch-btn:active {
+      background: rgba(255,255,255,0.45);
+      transform: scale(0.94);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+
+    #leaderboard {
+      padding-left: 18px;
+      margin: 4px 0 0 0;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+
+    /* ---------- เอฟเฟกต์สั่น ---------- */
+    @keyframes shake {
+      0%   { transform: translate(0,0); }
+      20%  { transform: translate(-4px,2px); }
+      40%  { transform: translate(4px,-2px); }
+      60%  { transform: translate(-3px,-2px); }
+      80%  { transform: translate(3px,2px); }
+      100% { transform: translate(0,0); }
+    }
+    #game.shake {
+      animation: shake 0.3s ease;
+    }
+
+    /* ---------- เอฟเฟกต์แฟลช ---------- */
+    @keyframes eatFlash {
+      0%   { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+      50%  { box-shadow: 0 0 45px rgba(78,205,196,0.9); }
+      100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    }
+    #game.eat-flash {
+      animation: eatFlash 0.25s ease-out;
+    }
+
+    @keyframes freezeFlash {
+      0%   { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+      50%  { box-shadow: 0 0 45px rgba(0,212,255,0.9); }
+      100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    }
+    #game.freeze-flash {
+      animation: freezeFlash 0.3s ease-out;
+    }
+
+    @keyframes hitFlash {
+      0%   { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+      50%  { box-shadow: 0 0 55px rgba(245,87,108,0.95); }
+      100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    }
+    #game.hit-flash {
+      animation: hitFlash 0.35s ease-out;
+    }
+
+    /* ---------- มุมมองสำหรับมือถือ ---------- */
+    @media (max-width: 700px) {
+      body {
+        justify-content:flex-start;
+        padding-top: 80px;
+        padding-bottom: 200px; /* เพิ่มพื้นที่ให้ปุ่มจอยสติ๊ก */
+      }
+
+      .ui {
+        position: static;
+        margin: 0 16px 16px;
+        width: calc(100% - 32px);
+        max-width: 420px;
+        transform: none !important;
+        opacity: 1 !important;
+        pointer-events: all !important;
+      }
+
+      .ui.collapsed {
+        display: none;
+      }
+
+      .ui-toggle {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+      }
+
+      .mini-score {
+        display: none !important;
+      }
+
+      .touch-controls-wrapper {
+        display: flex; /* แสดงบนมือถือ */
+        bottom: 24px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
+      
+      #game {
+        margin-bottom: 20px; /* เว้นระยะห่างจากจอยสติ๊ก */
+      }
+    }
+
+    /* ===== Share Button Label ===== */
+.share-wrapper {
+  position: fixed;
+  bottom: 20px;
+  right: 20px; 
+  left: auto;   
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.share-label {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #fff;
+  opacity: 0.9;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  pointer-events: none;
+}
+
+  </style>
+
+</head>
+<body>
+
+<!-- เพลงพื้นหลัง (ใส่ไฟล์ bgm.mp3 ในโฟลเดอร์เดียวกับไฟล์นี้) -->
+<audio id="bgm" src="bgm.mp3" loop></audio>
+
+<button class="share-pill" id="shareBtn">
+  <span class="share-icon">📤</span>
+  <span class="share-text">แชร์</span>
+</button>
+
+<!-- Share Modal -->
+<div class="share-modal" id="shareModal">
+  <div class="share-modal-content">
+    <button class="share-modal-close" id="closeShareModal">✕</button>
+    <h2 style="margin-top: 0;">🏆 แชร์สถิติสูงสุด</h2>
+    <div class="share-score-display" id="shareScoreDisplay">0</div>
+    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 10px;">
+      โหมด: <span id="shareDifficulty">Easy</span>
+    </div>
+    <div class="share-buttons">
+      <button class="share-social-btn share-twitter" id="shareTwitter">
+        🐦 Twitter
+      </button>
+      <button class="share-social-btn share-facebook" id="shareFacebook">
+        📘 Facebook
+      </button>
+      <button class="share-social-btn share-copy" id="shareCopy">
+        📋 คัดลอกลิงก์
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ปุ่มเปิด/ปิด UI Panel -->
+<button class="ui-toggle" id="uiToggle">✕</button>
+
+<!-- ปุ่มดู Achievement -->
+<button class="achievement-btn" id="achievementBtn">🏆</button>
+
+<!-- FPS Counter -->
+<div class="fps-counter" id="fpsCounter">
+  <div><span class="fps-label">Render:</span> <span id="renderFPS">60</span> FPS</div>
+  <div><span class="fps-label">Logic:</span> <span id="logicFPS">10</span> FPS</div>
+</div>
+
+<!-- Achievement Modal -->
+<div class="achievement-modal" id="achievementModal">
+  <div class="achievement-modal-content">
+    <button class="achievement-modal-close" id="closeAchievementModal">✕</button>
+    <h2 style="margin-top: 0; text-align: center;">🏆 ความสำเร็จ</h2>
+    <div id="achievementList"></div>
+  </div>
+</div>
+
+<!-- คะแนนแบบย่อ (แสดงตอนเก็บ UI) -->
+<div class="mini-score" id="miniScore">
+  Score: <span id="miniScoreValue">0</span>
+</div>
+
+<div class="ui" id="uiPanel">
+  Score: <span id="score">0</span><br>
+  High Score: <span id="highScore">0</span><br>
+  Monsters Killed: <span id="monstersKilled">0</span><br>
+  <div id="comboDisplay" style="display:none; margin-top:5px; font-size:16px; color:#ffeb3b; font-weight:bold; text-shadow: 0 0 10px #ffeb3b;">
+    🔥 COMBO x<span id="comboCount">0</span>
+  </div>
+  <div id="killComboDisplay" style="display:none; margin-top:5px; font-size:14px; color:#00d4ff; font-weight:bold; text-shadow: 0 0 10px #00d4ff;">
+    ❄️ Kill Combo: <span id="killComboCount">0</span>
+  </div>
+  <div id="streakDisplay" style="margin-top:5px; font-size:13px; opacity:0.9;">
+    🔥 Streak: <span id="streakCount">0</span> วัน
+  </div>
+
+  <div style="margin-top:10px; font-size:13px; line-height:1.4; background:rgba(255,255,255,0.15); padding:10px; border-radius:8px;">
+    ใครได้ถึง <b>10000 แต้ม</b> ในโหมด <b>HARD</b><br>
+    อัดคลิปวิดีโอส่งมาที่<br>
+    <b>bosszazababa@gmail.com</b><br>
+    พร้อมส่งเลขบัญชี เดี๋ยวโอนเงินรางวัลให้ <b>100 บาท</b>
+  </div>
+
+  <div style="margin-top:12px; font-size:14px;">
+    <b>Online Leaderboard</b>
+    <div style="font-size:12px;opacity:0.8;">โหมด: <span id="lbModeText">easy</span></div>
+    <ol id="leaderboard"></ol>
+  </div>
+
+  <div class="difficulty">
+    <div style="font-size:14px; margin-bottom:5px;">Difficulty:</div>
+    <button class="diff-btn active" data-level="easy">Easy</button>
+    <button class="diff-btn" data-level="normal">Normal</button>
+    <button class="diff-btn" data-level="hard">Hard</button>
+  </div>
+
+  <div style="margin-top:12px;">
+  <b>Theme</b><br>
+  <button class="theme-btn active" data-theme="default">Classic</button>
+  <button class="theme-btn" data-theme="neon">Neon 🔒</button>
+</div>
+
+  <button id="restart">Restart</button>
+  <div style="margin-top:12px; font-size:14px;">
+  <b>Sound</b><br>
+
+  <button id="toggleMusic"
+    style="
+      margin-top:6px;
+      width:100%;
+      padding:6px;
+      border:none;
+      border-radius:6px;
+      background:rgba(255,255,255,0.2);
+      color:#fff;
+      cursor:pointer;
+    ">
+    🔊 Music: ON
+  </button>
+
+  <input id="volumeControl"
+    type="range"
+    min="0"
+    max="100"
+    value="40"
+    style="width:100%; margin-top:6px;">
+</div>
+
+  <div style="margin-top:12px; font-size:14px;">
+    <b>Performance</b><br>
+    
+    <button id="toggleFPS"
+      style="
+        margin-top:6px;
+        width:100%;
+        padding:6px;
+        border:none;
+        border-radius:6px;
+        background:rgba(255,255,255,0.2);
+        color:#fff;
+        cursor:pointer;
+      ">
+      📊 FPS Counter: OFF
+    </button>
+
+    <button id="togglePerformance"
+      style="
+        margin-top:6px;
+        width:100%;
+        padding:6px;
+        border:none;
+        border-radius:6px;
+        background:rgba(255,255,255,0.2);
+        color:#fff;
+        cursor:pointer;
+      ">
+      ⚡ Performance Mode: OFF
+    </button>
+  </div>
+
+</div>
+
+<canvas id="game" width="600" height="600"></canvas>
+
+<div class="touch-controls-wrapper">
+  <div class="touch-controls">
+    <button class="touch-btn" data-dir="up">▲</button>
+    <div class="touch-controls-row">
+      <button class="touch-btn" data-dir="left">◀</button>
+      <button class="touch-btn" data-dir="down">▼</button>
+      <button class="touch-btn" data-dir="right">▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCORE_API_BASE = "https://snake-scoreboard-backend.onrender.com/api";
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('highScore');
+const monstersKilledEl = document.getElementById('monstersKilled');
+const killComboCountEl = document.getElementById('killComboCount');
+const killComboDisplayEl = document.getElementById('killComboDisplay');
+const restartBtn = document.getElementById('restart');
+const diffBtns = document.querySelectorAll('.diff-btn');
+const touchBtns = document.querySelectorAll('.touch-btn');
+const leaderboardEl = document.getElementById('leaderboard');
+const lbModeText = document.getElementById('lbModeText');
+const bgm = document.getElementById('bgm'); // เพลงพื้นหลัง
+const toggleMusicBtn = document.getElementById('toggleMusic');
+const volumeControl = document.getElementById('volumeControl');
+const comboDisplay = document.getElementById('comboDisplay');
+const comboCount = document.getElementById('comboCount');
+const streakDisplay = document.getElementById('streakCount');
+const uiPanel = document.getElementById('uiPanel');
+const uiToggle = document.getElementById('uiToggle');
+const miniScore = document.getElementById('miniScore');
+const miniScoreValue = document.getElementById('miniScoreValue');
+const achievementBtn = document.getElementById('achievementBtn');
+const achievementModal = document.getElementById('achievementModal');
+const closeAchievementModal = document.getElementById('closeAchievementModal');
+const achievementList = document.getElementById('achievementList');
+const fpsCounter = document.getElementById('fpsCounter');
+const renderFPSEl = document.getElementById('renderFPS');
+const logicFPSEl = document.getElementById('logicFPS');
+const toggleFPSBtn = document.getElementById('toggleFPS');
+const togglePerformanceBtn = document.getElementById('togglePerformance');
+const shareBtn = document.getElementById('shareBtn');
+const shareModal = document.getElementById('shareModal');
+const closeShareModal = document.getElementById('closeShareModal');
+const shareScoreDisplay = document.getElementById('shareScoreDisplay');
+const shareDifficulty = document.getElementById('shareDifficulty');
+const shareTwitter = document.getElementById('shareTwitter');
+const shareFacebook = document.getElementById('shareFacebook');
+const shareCopy = document.getElementById('shareCopy');
+const themeBtns = document.querySelectorAll('.theme-btn');
+bgm.volume = 0.4;
+
+// ===== FPS Counter =====
+let fpsEnabled = false;
+let lastFrameTime = performance.now();
+let renderFPS = 60;
+let frameCount = 0;
+let fpsUpdateTime = 0;
+
+// ===== Game Logic FPS =====
+let logicFPS = 10;
+let logicFrameCount = 0;
+let logicFPSUpdateTime = 0;
+let lastLogicTime = performance.now();
+
+// ===== Performance Mode =====
+let performanceMode = false;
+
+// ===== Animation Loop =====
+let animationFrameId = null;
+let lastGameTick = 0;
+
+// ===== Theme System =====
+let currentTheme = localStorage.getItem('snakeTheme') || 'default';
+
+// ===== ธีมที่ปลดล็อกแล้ว =====
+const unlockedThemes = JSON.parse(
+  localStorage.getItem("snakeUnlockedThemes") || "[]"
+);
+
+function isThemeUnlocked(themeKey) {
+  return unlockedThemes.includes(themeKey);
+}
+
+function unlockTheme(themeKey) {
+  if (!unlockedThemes.includes(themeKey)) {
+    unlockedThemes.push(themeKey);
+    localStorage.setItem(
+      "snakeUnlockedThemes",
+      JSON.stringify(unlockedThemes)
+    );
+  }
+}
+
+const themes = {
+  default: {
+    name: "Classic",
+    locked: false,
+    background: "#1a1a2e",
+    snakeBody: ["#c7ede6", "#9fd3c7"],
+    food: "#ff6b6b",
+    freezeItem: "#00d4ff",
+    monsterEye: "#ffffff",
+    monsterPupil: "#ff4d6d",
+    particle: "rgba(0,212,255,0.9)"
+  },
+
+  neon: {
+    name: "Neon",
+    locked: true,
+    price: 10,
+
+    background: "#0b0f2b",
+    snakeBody: ["#00fff0", "#00c8ff"],
+    food: "#ff00ff",
+    freezeItem: "#00ffea",
+    monsterEye: "#ffffff",
+    monsterPupil: "#ff00aa",
+    particle: "rgba(0,255,255,0.9)"
+  }
+};
+
+function updateThemeButtonsOnLoad() {
+  themeBtns.forEach(btn => {
+    const key = btn.dataset.theme;
+
+    // เอา 🔒 ออกถ้าปลดแล้ว
+    if (themes[key].locked && isThemeUnlocked(key)) {
+      btn.textContent = themes[key].name;
+    }
+
+    // active เฉพาะธีมปัจจุบัน
+    btn.classList.toggle("active", key === currentTheme);
+  });
+}
+
+// เรียกใช้งานทันทีตอนโหลดหน้า
+updateThemeButtonsOnLoad();
+
+// ===== Theme Button Logic =====
+themeBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const themeKey = btn.dataset.theme;
+
+    // ถ้าเป็นธีมล็อก และยังไม่ปลด
+    if (themes[themeKey].locked && !isThemeUnlocked(themeKey)) {
+      openUnlockModal(themeKey);
+      return;
+    }
+
+    // เปลี่ยนธีม
+    currentTheme = themeKey;
+    localStorage.setItem("snakeTheme", themeKey);
+
+    // เปลี่ยน active UI
+    themeBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+// ===== Unlock Theme System (UX ดี) =====
+let pendingThemeKey = null;
+
+// ===== Admin Unlock Code =====
+const ADMIN_UNLOCK_CODE = "SNAKEVSMONSTER2569";
+
+// ===== One-Time Unlock Codes (ใช้ได้ครั้งเดียว) =====
+const usedCodes = JSON.parse(localStorage.getItem("snakeUsedCodes") || "[]");
+
+function isCodeUsed(code) {
+  return usedCodes.includes(code);
+}
+
+function markCodeAsUsed(code) {
+  if (!usedCodes.includes(code)) {
+    usedCodes.push(code);
+    localStorage.setItem("snakeUsedCodes", JSON.stringify(usedCodes));
+  }
+}
+
+// ===== ตรวจสอบรูปแบบโค้ด =====
+function validateUnlockCode(code, themeKey) {
+  // รูปแบบ: THEMENAME-XXXXXX (เช่น NEON-A7B3C9)
+  const themeName = themes[themeKey].name.toUpperCase();
+  const pattern = new RegExp(`^${themeName}-[A-Z0-9]{6}$`);
+  return pattern.test(code);
+}
+
+// ===== ฟังก์ชันสร้างโค้ดสำหรับแอดมิน =====
+function generateUnlockCode(themeKey) {
+  const themeName = themes[themeKey].name.toUpperCase();
+  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `${themeName}-${randomPart}`;
+}
+
+// ===== Console Helper สำหรับแอดมิน =====
+console.log("🔧 Admin Tools:");
+console.log("สร้างโค้ดปลดล็อก: generateUnlockCode('neon')");
+console.log("ดูโค้ดที่ใช้แล้ว: usedCodes");
+console.log("ล้างโค้ดที่ใช้แล้ว: localStorage.removeItem('snakeUsedCodes')");
+
+function openUnlockModal(themeKey) {
+  pendingThemeKey = themeKey;
+
+  document.getElementById("unlockThemeText").textContent =
+    `ธีม ${themes[themeKey].name} ราคา ${themes[themeKey].price} บาท`;
+
+  document.getElementById("unlockModal").classList.add("show");
+}
+
+function closeUnlockModal() {
+  document.getElementById("unlockModal").classList.remove("show");
+  const input = document.getElementById("adminCodeInput");
+  if (input) input.value = "";
+}
+
+function unlockWithAdminCode() {
+  const input = document.getElementById("adminCodeInput");
+  const code = input.value.trim().toUpperCase();
+
+  if (!pendingThemeKey) return;
+
+  // ตรวจสอบว่าโค้ดถูกใช้ไปแล้วหรือยัง
+  if (isCodeUsed(code)) {
+    alert("❌ โค้ดนี้ถูกใช้ไปแล้ว\nกรุณาติดต่อแอดมินเพื่อขอโค้ดใหม่");
+    input.value = "";
+    return;
+  }
+
+  // ตรวจสอบรูปแบบโค้ด (เช่น NEON-A7B3C9)
+  const isValidFormat = validateUnlockCode(code, pendingThemeKey);
+  
+  // ตรวจสอบโค้ดแอดมิน (รหัสหลัก)
+  const isAdminCode = code === ADMIN_UNLOCK_CODE;
+
+  if (!isValidFormat && !isAdminCode) {
+    alert("❌ รูปแบบโค้ดไม่ถูกต้อง\nรูปแบบที่ถูกต้อง: " + themes[pendingThemeKey].name.toUpperCase() + "-XXXXXX");
+    input.value = "";
+    return;
+  }
+
+  // ✅ ปลดล็อกธีม
+  unlockTheme(pendingThemeKey);
+
+  currentTheme = pendingThemeKey;
+  localStorage.setItem("snakeTheme", pendingThemeKey);
+
+  // บันทึกว่าโค้ดนี้ถูกใช้แล้ว (ยกเว้นโค้ดแอดมิน)
+  if (!isAdminCode) {
+    markCodeAsUsed(code);
+  }
+
+  // อัปเดตปุ่ม
+  themeBtns.forEach(btn => {
+    if (btn.dataset.theme === pendingThemeKey) {
+      btn.classList.add("active");
+      btn.textContent = themes[pendingThemeKey].name;
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  closeUnlockModal();
+  input.value = "";
+
+  alert("🎉 ปลดล็อกธีมเรียบร้อย!\nธีม " + themes[pendingThemeKey].name + " พร้อมใช้งานแล้ว");
+}
+
+function notifyPayment() {
+  if (!pendingThemeKey) return;
+
+  const themeName = themes[pendingThemeKey].name;
+  const themePrice = themes[pendingThemeKey].price;
+
+  // 📧 แจ้งผู้เล่นให้ส่งสลิปให้แอดมิน
+  alert(
+    `✅ กรุณาส่งสลิปการโอนเงิน ${themePrice} บาท\n` +
+    `พร้อมระบุธีม "${themeName}"\n\n` +
+    `ส่งมาที่: bosszazababa@gmail.com\n\n` +
+    `แอดมินจะส่งโค้ดปลดล็อกให้ภายใน 24 ชม.`
+  );
+
+  closeUnlockModal();
+}
+
+uiToggle.addEventListener('click', () => {
+  const collapsed = uiPanel.classList.toggle('collapsed');
+
+  if (collapsed) {
+    uiToggle.textContent = '☰'; // เปิด UI
+    miniScore.classList.add('show');
+  } else {
+    uiToggle.textContent = '✕'; // ปิด UI
+    miniScore.classList.remove('show');
+  }
+});
+
+// ===== Achievement Modal =====
+const achievementData = {
+  firstKill: { icon: '⚔️', title: 'First Blood!', desc: 'ฆ่ามอนสเตอร์ตัวแรก' },
+  combo5: { icon: '🔥', title: 'Combo Master!', desc: 'ทำ Combo 5 ครั้งติดกัน' },
+  combo10: { icon: '💥', title: 'Combo God!', desc: 'ทำ Combo 10 ครั้งติดกัน' },
+  score100: { icon: '💯', title: 'Century!', desc: 'ได้ 100 คะแนน' },
+  score500: { icon: '⭐', title: 'High Scorer!', desc: 'ได้ 500 คะแนน' },
+  score1000: { icon: '👑', title: 'Legend!', desc: 'ได้ 1000 คะแนน' },
+  score10000: { icon: '🏅', title: 'Ultimate Master!', desc: 'ได้ 10000 คะแนนในโหมด HARD - รับรางวัล 100 บาท!' }
+};
+
+function updateAchievementList() {
+  achievementList.innerHTML = '';
+  
+  Object.keys(achievementData).forEach(key => {
+    const data = achievementData[key];
+    const unlocked = achievements[key];
+    
+    const item = document.createElement('div');
+    item.className = `achievement-item ${unlocked ? '' : 'locked'}`;
+    item.innerHTML = `
+      <div class="achievement-icon">${unlocked ? data.icon : '🔒'}</div>
+      <div class="achievement-info">
+        <div class="achievement-title">${data.title}</div>
+        <div class="achievement-desc">${data.desc}</div>
+      </div>
+    `;
+    achievementList.appendChild(item);
+  });
+}
+
+achievementBtn.addEventListener('click', () => {
+  updateAchievementList();
+  achievementModal.classList.add('show');
+});
+
+closeAchievementModal.addEventListener('click', () => {
+  achievementModal.classList.remove('show');
+});
+
+achievementModal.addEventListener('click', (e) => {
+  if (e.target === achievementModal) {
+    achievementModal.classList.remove('show');
+  }
+});
+
+// ฟังก์ชันแชร์ภาพหน้าจอเกมจริง
+async function shareGameOverImage() {
+  try {
+    // ใช้ canvas ของเกมโดยตรง
+    const blob = await new Promise(resolve => {
+      canvas.toBlob(resolve, 'image/png');
+    });
+    
+    // สร้าง File object
+    const file = new File([blob], `snake-game-over-${score}.png`, { type: 'image/png' });
+    
+    // ใช้ Web Share API
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: 'Snake vs Monster - Game Over',
+        text: `🐍 ได้ ${score} คะแนนในเกม Snake vs Monster! เล่นด้วยกันไหม?`,
+        files: [file]
+      });
+    } else if (navigator.share) {
+      // ถ้าแชร์ไฟล์ไม่ได้ แต่แชร์ข้อความได้
+      await navigator.share({
+        title: 'Snake vs Monster - Game Over',
+        text: `🐍 ได้ ${score} คะแนนในเกม Snake vs Monster! เล่นด้วยกันไหม?`,
+        url: 'https://snakevsmonster-game.onrender.com'
+      });
+    } else {
+      // fallback: ดาวน์โหลดภาพ
+      downloadGameScreenshot();
+    }
+  } catch (error) {
+    console.log('Share cancelled or failed:', error);
+    // fallback: ดาวน์โหลดภาพ
+    downloadGameScreenshot();
+  }
+}
+
+// ฟังก์ชันดาวน์โหลดภาพหน้าจอเกม
+function downloadGameScreenshot() {
+  // ใช้ canvas ของเกมโดยตรง
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snake-game-over-${score}-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
+// ===== Share Score (Smart Share) =====
+shareBtn.addEventListener('click', async () => {
+  const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})! 🎮🔥`;
+  const url = 'https://snakevsmonster-game.onrender.com';
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Snake Game Score',
+        text,
+        url
+      });
+      return; 
+    } catch (err) {
+      return; 
+    }
+  }
+
+  // 👉 Desktop เท่านั้น
+  shareScoreDisplay.textContent = highScore;
+  shareDifficulty.textContent = difficulty.toUpperCase();
+  shareModal.classList.add('show');
+});
+
+closeShareModal.addEventListener('click', () => {
+  shareModal.classList.remove('show');
+});
+
+shareModal.addEventListener('click', (e) => {
+  if (e.target === shareModal) {
+    shareModal.classList.remove('show');
+  }
+});
+
+shareTwitter.addEventListener('click', () => {
+  const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})! มาท้าชิงกัน! 🎮🔥`;
+  const url = 'https://snakevsmonster-game.onrender.com';
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  window.open(twitterUrl, '_blank');
+});
+
+shareFacebook.addEventListener('click', () => {
+  const url = 'https://snakevsmonster-game.onrender.com';
+  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+  window.open(facebookUrl, '_blank');
+});
+
+shareCopy.addEventListener('click', async () => {
+  const text = `🐍 สถิติสูงสุดของฉันคือ ${highScore} คะแนน ในเกม Snake vs Monster (โหมด ${difficulty.toUpperCase()})!\nhttps://snakevsmonster-game.onrender.com`;
+  
+  try {
+    await navigator.clipboard.writeText(text);
+    shareCopy.textContent = '✅ คัดลอกแล้ว!';
+    shareCopy.style.background = '#0f9d58';
+    
+    setTimeout(() => {
+      shareCopy.textContent = '📋 คัดลอกลิงก์';
+      shareCopy.style.background = '#34a853';
+    }, 2000);
+  } catch (err) {
+    // Fallback สำหรับบราวเซอร์เก่า
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    
+    shareCopy.textContent = '✅ คัดลอกแล้ว!';
+    setTimeout(() => {
+      shareCopy.textContent = '📋 คัดลอกลิงก์';
+    }, 2000);
+  }
+});
+
+// ===== FPS Toggle =====
+toggleFPSBtn.addEventListener('click', () => {
+  fpsEnabled = !fpsEnabled;
+  if (fpsEnabled) {
+    fpsCounter.classList.add('show');
+    toggleFPSBtn.textContent = '📊 FPS Counter: ON';
+  } else {
+    fpsCounter.classList.remove('show');
+    toggleFPSBtn.textContent = '📊 FPS Counter: OFF';
+  }
+});
+
+// ===== Performance Mode Toggle =====
+togglePerformanceBtn.addEventListener('click', () => {
+  performanceMode = !performanceMode;
+  if (performanceMode) {
+    togglePerformanceBtn.textContent = '⚡ Performance Mode: ON';
+    togglePerformanceBtn.style.background = 'rgba(76, 175, 80, 0.3)';
+  } else {
+    togglePerformanceBtn.textContent = '⚡ Performance Mode: OFF';
+    togglePerformanceBtn.style.background = 'rgba(255,255,255,0.2)';
+  }
+});
+
+// ===== FPS Calculation =====
+function updateFPS() {
+  const currentTime = performance.now();
+  const delta = currentTime - lastFrameTime;
+  lastFrameTime = currentTime;
+  
+  frameCount++;
+  fpsUpdateTime += delta;
+  
+  if (fpsUpdateTime >= 500) { // อัพเดททุก 0.5 วินาที
+    renderFPS = Math.round((frameCount * 1000) / fpsUpdateTime);
+    frameCount = 0;
+    fpsUpdateTime = 0;
+    
+    if (fpsEnabled) {
+      renderFPSEl.textContent = renderFPS;
+      
+      // เปลี่ยนสีตาม Render FPS
+      fpsCounter.classList.remove('good', 'medium', 'bad');
+      if (renderFPS >= 50) {
+        fpsCounter.classList.add('good');
+      } else if (renderFPS >= 35) {
+        fpsCounter.classList.add('medium');
+      } else {
+        fpsCounter.classList.add('bad');
+      }
+    }
+  }
+}
+
+// ===== Game Logic FPS Calculation =====
+function updateLogicFPS() {
+  const currentTime = performance.now();
+  const delta = currentTime - lastLogicTime;
+  lastLogicTime = currentTime;
+  
+  logicFrameCount++;
+  logicFPSUpdateTime += delta;
+  
+  if (logicFPSUpdateTime >= 1000) { // อัพเดททุก 1 วินาที
+    logicFPS = Math.round((logicFrameCount * 1000) / logicFPSUpdateTime);
+    logicFrameCount = 0;
+    logicFPSUpdateTime = 0;
+    
+    if (fpsEnabled) {
+      logicFPSEl.textContent = logicFPS;
+    }
+  }
+}
+
+// ===== Animation Loop (60 FPS) =====
+function animationLoop(currentTime) {
+  if (!running) {
+    animationFrameId = requestAnimationFrame(animationLoop);
+    updateFPS();
+    return;
+  }
+  
+  // วาดเกมทุกเฟรม (60 FPS)
+  draw();
+  updateFPS();
+  
+  animationFrameId = requestAnimationFrame(animationLoop);
+}
+
+// เริ่ม animation loop จะถูกเรียกหลัง resetGame()
+// animationLoop(performance.now());
+
+// ---------- WebAudio สำหรับเอฟเฟกต์เสียง ----------
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return; // บราวเซอร์เก่ามาก
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+}
+
+toggleMusicBtn.addEventListener('click', () => {
+  musicEnabled = !musicEnabled;
+
+  if (musicEnabled) {
+    bgm.volume = volumeControl.value / 100;
+    bgm.play().catch(() => {});
+    toggleMusicBtn.textContent = "🔊 Music: ON";
+  } else {
+    bgm.pause();
+    toggleMusicBtn.textContent = "🔇 Music: OFF";
+  }
+});
+
+volumeControl.addEventListener('input', () => {
+  bgm.volume = volumeControl.value / 100;
+});
+
+
+function playBeep(freq, duration, type = "sine") {
+  initAudio();
+  if (!audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+  gain.gain.setValueAtTime(0.22, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+function playEatSound() {
+  // เสียงกินแบบปิ๊บ ๆ
+  playBeep(880, 0.08, "square");
+}
+
+function playFreezeSound() {
+  // เสียงเก็บไอเท็ม
+  playBeep(1320, 0.12, "triangle");
+}
+
+function playGameOverSound() {
+  initAudio();
+  if (!audioCtx) return;
+  playBeep(260, 0.25, "sawtooth");
+  setTimeout(() => playBeep(180, 0.35, "sawtooth"), 180);
+}
+
+// ---------- เอฟเฟกต์ภาพ ----------
+function triggerCanvasFlash(className, duration = 180) {
+  canvas.classList.remove('eat-flash', 'freeze-flash', 'hit-flash');
+  // force reflow
+  void canvas.offsetWidth;
+  canvas.classList.add(className);
+  setTimeout(() => {
+    canvas.classList.remove(className);
+  }, duration);
+}
+
+function screenShake() {
+  canvas.classList.add('shake');
+  setTimeout(() => canvas.classList.remove('shake'), 300);
+}
+
+function spawnIceExplosion(x, y) {
+  const cx = x * GRID + GRID / 2;
+  const cy = y * GRID + GRID / 2;
+
+  // Performance Mode: ลด particles
+  const particleCount = performanceMode ? 8 : 16;
+  
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: cx,
+      y: cy,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6,
+      life: 30
+    });
+  }
+}
+
+function spawnFloatingText(x, y, text) {
+  floatingTexts.push({
+    x: x * GRID + GRID / 2,
+    y: y * GRID + GRID / 2,
+    text,
+    life: 40
+  });
+}
+
+function updateEffects() {
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2;
+    p.life--;
+  });
+  particles = particles.filter(p => p.life > 0);
+
+  floatingTexts.forEach(t => {
+    t.y -= 0.6;
+    t.life--;
+  });
+  floatingTexts = floatingTexts.filter(t => t.life > 0);
+}
+
+const GRID = 20;
+const COLS = canvas.width / GRID;
+const ROWS = canvas.height / GRID;
+
+let snake, dir, food, monster, running, score, tickInterval, monsterMoveCounter;
+let difficulty = 'easy';
+let highScore = parseInt(localStorage.getItem('snakeHighScore') || '0');
+let lastPlayerRank = null;   
+let overtakeAlertCount = 0;  
+highScoreEl.textContent = highScore;
+let leaderboardLoading = false;
+let freezeItem = null;
+let monstersFrozen = false;
+let freezeDuration = 0;
+let nextFreezeScore = 100;
+let bgmStarted = false; // กันเล่นเพลงซ้ำตอนเริ่ม
+let musicEnabled = true;
+let particles = [];
+let floatingTexts = [];
+let nextMonsterRespawnScore = 100;
+let deathReason = "";
+let fearShake = 0; // งูขี้กลัว
+let directionLocked = false; // 🔒 ล็อกทิศทาง
+
+// ===== ระบบ Combo =====
+let combo = 0;
+let comboTimer = 0;
+let maxCombo = 0;
+
+// ===== ระบบนับมอนสเตอร์ที่ฆ่า =====
+let monstersKilled = 0;
+let killCombo = 0;
+let maxKillCombo = 0;
+
+// ===== Achievement System =====
+let achievements = {
+  firstKill: false,
+  combo5: false,
+  combo10: false,
+  score100: false,
+  score500: false,
+  score1000: false,
+  score10000: false
+};
+let achievementQueue = [];
+let gameStartTime = 0;
+let gamePlayTime = 0; // เวลาเล่นทั้งหมด (วินาที)
+
+// ฟังก์ชันแปลงเวลาเป็นรูปแบบ mm:ss
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+// ===== Streak System =====
+let dailyStreak = parseInt(localStorage.getItem('snakeDailyStreak') || '0');
+let lastPlayDate = localStorage.getItem('snakeLastPlayDate') || '';
+
+highScoreEl.textContent = highScore;
+streakDisplay.textContent = dailyStreak;
+
+// ===== อัพเดท Streak =====
+function updateStreak() {
+  const today = new Date().toDateString();
+  if (lastPlayDate !== today) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (lastPlayDate === yesterday.toDateString()) {
+      dailyStreak++;
+    } else if (lastPlayDate !== today) {
+      dailyStreak = 1;
+    }
+    
+    lastPlayDate = today;
+    localStorage.setItem('snakeDailyStreak', dailyStreak);
+    localStorage.setItem('snakeLastPlayDate', lastPlayDate);
+    streakDisplay.textContent = dailyStreak;
+  }
+}
+updateStreak();
+
+// ===== Achievement Functions =====
+function unlockAchievement(key, title, desc) {
+  if (!achievements[key]) {
+    achievements[key] = true;
+    achievementQueue.push({ title, desc });
+    localStorage.setItem('snakeAchievements', JSON.stringify(achievements));
+    playAchievementSound();
+    setTimeout(showAchievement, 100);
+  }
+}
+
+function playAchievementSound() {
+  playBeep(880, 0.1, "sine");
+  setTimeout(() => playBeep(1100, 0.1, "sine"), 100);
+  setTimeout(() => playBeep(1320, 0.15, "sine"), 200);
+}
+
+function showAchievement() {
+  if (achievementQueue.length === 0) return;
+  
+  const ach = achievementQueue.shift();
+  const div = document.createElement('div');
+  div.style.cssText = `
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    transform: translateX(400px);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 10000;
+    text-align: left;
+    animation: achievementSlide 3s ease-out forwards;
+    max-width: 280px;
+  `;
+  div.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="font-size: 32px;">🏆</div>
+      <div style="flex: 1;">
+        <div style="font-size: 15px; font-weight: bold;">${ach.title}</div>
+        <div style="font-size: 12px; opacity: 0.9; margin-top: 3px;">${ach.desc}</div>
+      </div>
+    </div>
+  `;
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes achievementSlide {
+      0% { transform: translateX(400px); opacity: 0; }
+      10% { transform: translateX(0); opacity: 1; }
+      90% { transform: translateX(0); opacity: 1; }
+      100% { transform: translateX(400px); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(div);
+  
+  setTimeout(() => {
+    div.remove();
+    if (achievementQueue.length > 0) {
+      setTimeout(showAchievement, 500);
+    }
+  }, 3000);
+}
+
+// โหลด achievements
+const savedAch = localStorage.getItem('snakeAchievements');
+if (savedAch) {
+  achievements = { ...achievements, ...JSON.parse(savedAch) };
+}
+
+const difficultySettings = {
+  easy:   { snakeSpeed: 100, monsterMoveInterval: 4, monsterCount: 1 },
+  normal: { snakeSpeed: 80,  monsterMoveInterval: 3, monsterCount: 1 },
+  hard:   { snakeSpeed: 70,  monsterMoveInterval: 2, monsterCount: 2 }
+};
+
+// เริ่มเพลงหลัง user มี interaction
+function startBgm() {
+  if (!musicEnabled) return;
+
+  if (!bgmStarted) {
+    initAudio();
+    bgm.volume = volumeControl.value / 100;
+    bgm.play().catch(() => {});
+    bgmStarted = true;
+  } else {
+    initAudio();
+  }
+}
+
+async function loadLeaderboard() {
+  if (leaderboardLoading) return;
+  leaderboardLoading = true;
+
+  try {
+    lbModeText.textContent = difficulty;
+    const res = await fetch(`${SCORE_API_BASE}/scores/top?mode=${difficulty}`);
+    const data = await res.json();
+
+    leaderboardEl.innerHTML = "";
+    if (!Array.isArray(data) || data.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "ยังไม่มีคะแนน";
+      leaderboardEl.appendChild(li);
+      return;
+    }
+    let currentRank = null;
+const myName = localStorage.getItem("snakePlayerName");
+
+data.forEach((row, index) => {
+  const li = document.createElement("li");
+  li.textContent = `${row.name} — ${row.score}`;
+  leaderboardEl.appendChild(li);
+
+  // ถ้าเป็นชื่อของเรา
+  if (row.name === myName) {
+    currentRank = index + 1;
+    li.style.color = "#ffeb3b";
+    li.style.fontWeight = "bold";
+  }
+});
+
+// ===== ตรวจโดนแซง (เฉพาะตอนเกมไม่เล่น) =====
+if (!running) {
+  if (
+    lastPlayerRank !== null &&
+    currentRank !== null &&
+    currentRank > lastPlayerRank
+  ) {
+    showOvertakeAlert();
+  }
+}
+
+// อัปเดตอันดับล่าสุดเสมอ
+lastPlayerRank = currentRank;
+
+    } catch (e) {
+    console.error("Load leaderboard error", e);
+  } finally {
+    leaderboardLoading = false;
+  }
+}
+
+async function submitScore() {
+  try {
+    let name = localStorage.getItem("snakePlayerName");
+    if (!name) {
+      name = prompt("ใส่ชื่อสำหรับจัดอันดับออนไลน์ (สูงสุด 20 ตัวอักษร):", "Player");
+      if (!name) return;
+      name = name.toString().slice(0, 20);
+      localStorage.setItem("snakePlayerName", name);
+    }
+
+    await fetch(`${SCORE_API_BASE}/scores`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, score, mode: difficulty }),
+    });
+
+    loadLeaderboard();
+  } catch (e) {
+    console.error("Submit score error", e);
+  }
+}
+
+diffBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    diffBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.level;
+    resetGame();
+  });
+});
+
+function resetGame(){
+  overtakeAlertCount = 0;
+  lastPlayerRank = null;
+  snake = [{x: Math.floor(COLS/2), y: Math.floor(ROWS/2)}];
+  dir = {x:1, y:0};
+  food = {x: 0, y: 0};
+  placeFood();
+  monster = [];
+  spawnMonsters();
+  freezeItem = null;
+  monstersFrozen = false;
+  freezeDuration = 0;
+  score = 0;
+  nextFreezeScore = 100;
+  scoreEl.textContent = score;
+  miniScoreValue.textContent = score;
+  
+  // รีเซ็ตสถิติมอนสเตอร์
+  monstersKilled = 0;
+  killCombo = 0;
+  monstersKilledEl.textContent = monstersKilled;
+  killComboCountEl.textContent = killCombo;
+  killComboDisplayEl.style.display = 'none'; // ซ่อน Kill Combo Display
+  running = true;
+  
+  // เริ่มนับเวลา
+  gameStartTime = Date.now();
+  gamePlayTime = 0;
+  monsterMoveCounter = 0;
+  clearInterval(tickInterval);
+  tickInterval = setInterval(gameTick, difficultySettings[difficulty].snakeSpeed);
+  loadLeaderboard();
+  deathReason = "";
+
+  particles = [];
+floatingTexts = [];
+nextMonsterRespawnScore = 100;
+combo = 0;
+comboTimer = 0;
+comboDisplay.style.display = 'none';
+gameStartTime = Date.now();
+
+  // เริ่ม animation loop ถ้ายังไม่ได้เริ่ม
+  if (!animationFrameId) {
+    animationLoop(performance.now());
+  }
+
+}
+
+function spawnMonsters(){
+  monster = [];
+  const count = difficultySettings[difficulty].monsterCount;
+  const headPos = snake[0];
+
+  for(let i = 0; i < count; i++){
+    let attempts = 0;
+    while(attempts < 100){
+      let m;
+      if(i === 0) {
+        m = { x: Math.floor(Math.random() * (COLS/2)), y: Math.floor(Math.random() * ROWS) };
+      } else {
+        m = { x: Math.floor(COLS/2 + Math.random() * (COLS/2)), y: Math.floor(Math.random() * ROWS) };
+      }
+
+      const distanceFromSnake = Math.abs(m.x - headPos.x) + Math.abs(m.y - headPos.y);
+      let farFromOthers = true;
+      for(let j = 0; j < monster.length; j++){
+        const dist = Math.abs(m.x - monster[j].x) + Math.abs(m.y - monster[j].y);
+        if(dist < 8) {
+          farFromOthers = false;
+          break;
+        }
+      }
+
+      if (!snake.some(s => s.x===m.x && s.y===m.y) &&
+          (food.x !== m.x || food.y !== m.y) &&
+          distanceFromSnake > 5 &&
+          farFromOthers) {
+        monster.push(m);
+        break;
+      }
+      attempts++;
+    }
+  }
+}
+
+function spawnExtraMonster() {
+  let attempts = 0;
+  while (attempts < 100) {
+    const m = {
+      x: Math.floor(Math.random() * COLS),
+      y: Math.floor(Math.random() * ROWS),
+    };
+
+    const dist = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
+
+    if (
+      !snake.some(s => s.x === m.x && s.y === m.y) &&
+      !monster.some(o => o.x === m.x && o.y === m.y) &&
+      dist > 6
+    ) {
+      monster.push(m);
+      break;
+    }
+    attempts++;
+  }
+}
+
+function updateHardMonstersByScore() {
+  if (difficulty !== "hard") return;
+
+  let targetCount = 2;
+  // ตัวที่ 3 มาตอน 50 คะแนน, ตัวที่ 4 มาตอน 100 คะแนน
+  if (score >= 100) targetCount = 4;
+  else if (score >= 50) targetCount = 3;
+
+  while (monster.length < targetCount) {
+    let m;
+    let attempts = 0;
+    while (attempts < 100) {
+      m = {
+        x: Math.floor(Math.random() * COLS),
+        y: Math.floor(Math.random() * ROWS),
+      };
+      const dist = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
+
+      if (
+        !snake.some(s => s.x === m.x && s.y === m.y) &&
+        !monster.some(o => o.x === m.x && o.y === m.y) &&
+        dist > 6
+      ) {
+        monster.push(m);
+        break;
+      }
+      attempts++;
+    }
+  }
+}
+
+function placeFood(){
+  while(true){
+    const f = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+    if (!snake.some(s => s.x===f.x && s.y===f.y) &&
+        (!freezeItem || (f.x !== freezeItem.x || f.y !== freezeItem.y))) {
+      food = f;
+      break;
+    }
+  }
+}
+
+function placeFreezeItem(){
+  while(true){
+    const f = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+    if (!snake.some(s => s.x===f.x && s.y===f.y) &&
+        (f.x !== food.x || f.y !== food.y) &&
+        !monster.some(m => m.x===f.x && m.y===f.y)) {
+      freezeItem = f;
+      break;
+    }
+  }
+}
+
+function moveMonsters(){
+  if (monstersFrozen) return;
+
+  monster.forEach((m, index) => {
+    const head = snake[0];
+    let predict = (difficulty === "hard") ? 6 : 2;
+    const predictedX = (head.x + dir.x * predict + COLS) % COLS;
+    const predictedY = (head.y + dir.y * predict + ROWS) % ROWS;
+
+    let targetX = predictedX;
+    let targetY = predictedY;
+
+    if (difficulty === "hard") {
+      if (index === 0) {
+        targetX = head.x;
+        targetY = head.y;
+      }
+      else if (index === 1) {
+        targetX = (predictedX + 2) % COLS;
+      }
+      else if (index === 2) {
+        targetY = (predictedY + 2) % ROWS;
+      }
+      else if (index === 3) {
+        targetX = (predictedX + 3) % COLS;
+        targetY = (predictedY + 3) % ROWS;
+      }
+    }
+
+    const dx = targetX - m.x;
+    const dy = targetY - m.y;
+
+    let tooClose = false;
+    monster.forEach(o => {
+      if (o !== m) {
+        const d = Math.abs(o.x - m.x) + Math.abs(o.y - m.y);
+        if (d < 2) tooClose = true;
+      }
+    });
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      m.x += dx > 0 ? 1 : -1;
+    } else {
+      m.y += dy > 0 ? 1 : -1;
+    }
+
+    if (tooClose) {
+      if (Math.random() > 0.5) m.x += Math.random() > 0.5 ? 1 : -1;
+      else m.y += Math.random() > 0.5 ? 1 : -1;
+    }
+
+    m.x = (m.x + COLS) % COLS;
+    m.y = (m.y + ROWS) % ROWS;
+  });
+}
+
+function gameTick(){
+  if(!running) return;
+
+  updateLogicFPS(); // อัพเดท Logic FPS
+
+  directionLocked = false; // ✅ ปลดล็อกทุก tick
+
+  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+  head.x = (head.x + COLS) % COLS;
+  head.y = (head.y + ROWS) % ROWS;
+
+  if (snake.some(s => s.x===head.x && s.y===head.y)) {
+  deathReason = "ชนตัวเอง";
+  gameOver();
+  return;
+}
+
+    for (let i = monster.length - 1; i >= 0; i--) {
+    if (monster[i].x === head.x && monster[i].y === head.y) {
+
+        if (monstersFrozen) {
+        const killed = monster[i];
+        monster.splice(i, 1);
+
+        score += 20;
+        scoreEl.textContent = score;
+        miniScoreValue.textContent = score;
+
+        // นับมอนสเตอร์ที่ฆ่าและคอมโบ
+        monstersKilled++;
+        killCombo++;
+        if (killCombo > maxKillCombo) maxKillCombo = killCombo;
+
+        // อัปเดต UI
+        monstersKilledEl.textContent = monstersKilled;
+        killComboCountEl.textContent = killCombo;
+        
+        // แสดง Kill Combo Display เมื่อมีการฆ่า
+        if (killCombo > 0) {
+          killComboDisplayEl.style.display = 'block';
+        }
+
+        // Achievement: ฆ่ามอนสเตอร์ตัวแรก
+        if (!achievements.firstKill) {
+          unlockAchievement('firstKill', 'First Blood!', 'ฆ่ามอนสเตอร์ตัวแรก');
+        }
+
+        spawnIceExplosion(killed.x, killed.y);     // ❄️ แตกน้ำแข็ง
+        spawnFloatingText(killed.x, killed.y, "+20"); // ✨ คะแนนลอย
+        triggerCanvasFlash('freeze-flash', 200);
+        screenShake();
+        playFreezeSound();
+        } else {
+        deathReason = "โดนมอนสเตอร์จับได้";
+        gameOver();
+        return;
+        }
+    }
+    }
+
+  monsterMoveCounter++;
+    if(monsterMoveCounter >= difficultySettings[difficulty].monsterMoveInterval){
+        moveMonsters();
+        monsterMoveCounter = 0;
+
+        for (let i = 0; i < monster.length; i++) {
+    if (monster[i].x === head.x && monster[i].y === head.y) {
+        deathReason = "มอนสเตอร์พุ่งชน";
+        gameOver();
+        return;
+    }
+  }
+}
+
+  snake.unshift(head);
+
+  if (head.x === food.x && head.y === food.y){
+    // ===== Combo System =====
+    combo++;
+    comboTimer = 50; // 50 ticks = ประมาณ 3-5 วินาที
+    if (combo > maxCombo) maxCombo = combo;
+    
+    let comboBonus = 0;
+    if (combo >= 10) comboBonus = 50;
+    else if (combo >= 5) comboBonus = 20;
+    else if (combo >= 3) comboBonus = 10;
+    
+    score += 10 + comboBonus;
+    scoreEl.textContent = score;
+    miniScoreValue.textContent = score;
+    
+    // แสดง Combo
+    if (combo >= 3) {
+      comboDisplay.style.display = 'block';
+      comboCount.textContent = combo;
+      spawnFloatingText(head.x, head.y, `+${10 + comboBonus}${comboBonus > 0 ? ' 🔥' : ''}`);
+    }
+    
+    // Achievements
+    if (combo === 5) unlockAchievement('combo5', 'Combo Master!', 'ทำ Combo 5 ครั้งติดกัน');
+    if (combo === 10) unlockAchievement('combo10', 'Combo God!', 'ทำ Combo 10 ครั้งติดกัน');
+    if (score >= 100 && !achievements.score100) unlockAchievement('score100', 'Century!', 'ได้ 100 คะแนน');
+    if (score >= 500 && !achievements.score500) unlockAchievement('score500', 'High Scorer!', 'ได้ 500 คะแนน');
+    if (score >= 1000 && !achievements.score1000) unlockAchievement('score1000', 'Legend!', 'ได้ 1000 คะแนน');
+    if (score >= 10000 && !achievements.score10000 && difficulty === 'hard') {
+      unlockAchievement('score10000', 'Ultimate Master!', 'ได้ 10000 คะแนนในโหมด HARD - รับรางวัล 100 บาท!');
+    }
+    
+    playEatSound();                   // เอฟเฟกต์เสียงกิน
+    triggerCanvasFlash('eat-flash');  // เอฟเฟกต์แสงตอนกิน
+    placeFood();
+
+    if(score >= nextFreezeScore && !freezeItem){
+      placeFreezeItem();
+      nextFreezeScore += 100;
+    }
+  } else {
+    snake.pop();
+  }
+
+  if(freezeItem && head.x === freezeItem.x && head.y === freezeItem.y){
+    freezeItem = null;
+    monstersFrozen = true;
+    freezeDuration = 50;
+    playFreezeSound();                    // เสียงเก็บไอเท็ม
+    triggerCanvasFlash('freeze-flash');   // แฟลชฟ้า
+  }
+
+  if(monstersFrozen){
+    freezeDuration--;
+    if(freezeDuration <= 0){
+      monstersFrozen = false;
+      killCombo = 0; // รีเซ็ตคอมโบการฆ่าเมื่อหมดเวลาแช่แข็ง
+      killComboCountEl.textContent = killCombo;
+      killComboDisplayEl.style.display = 'none'; // ซ่อน Kill Combo Display
+    }
+  }
+  
+    updateHardMonstersByScore();
+
+    // จำกัดมอนสเตอร์ไม่ให้เกิน 4 ตัวในโหมด Hard
+    if (score >= nextMonsterRespawnScore) {
+      if (difficulty !== "hard" || monster.length < 4) {
+        spawnExtraMonster();
+      }
+      nextMonsterRespawnScore += 100;
+    }
+
+    // ===== อัพเดท Combo Timer =====
+    if (comboTimer > 0) {
+      comboTimer--;
+      if (comboTimer === 0) {
+        combo = 0;
+        comboDisplay.style.display = 'none';
+      }
+    }
+
+        // ===== ตรวจว่างูกลัวไหม (มอนอยู่ใกล้หัวงู) =====
+    fearShake = 0;
+    monster.forEach(m => {
+    const d = Math.abs(m.x - snake[0].x) + Math.abs(m.y - snake[0].y);
+    if (d < 4) fearShake = 1;
+    });
+
+    updateEffects();
+    // draw(); // ย้ายไปที่ animation loop แล้ว
+    // updateFPS(); // ย้ายไปที่ animation loop แล้ว
+}
+
+function gameOver(){
+  running = false;
+  
+  // คำนวณเวลาเล่น
+  if (gameStartTime > 0) {
+    gamePlayTime = Math.floor((Date.now() - gameStartTime) / 1000); // แปลงเป็นวินาที
+  }
+  
+  if (score > highScore) {
+    highScore = score;
+    highScoreEl.textContent = highScore;
+    localStorage.setItem('snakeHighScore', highScore);
+  }
+
+  if (score > 0) {
+    submitScore();
+  }
+
+  playGameOverSound();           // เสียง Game Over
+  screenShake();                 // สั่นหน้าจอ
+  triggerCanvasFlash('hit-flash', 260); // แฟลชชมพูแรงๆ
+
+  draw();
+  ctx.fillStyle = "rgba(26,26,46,0.85)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = "#f5576c";
+  ctx.fillText("Game Over!", canvas.width/2, canvas.height/2 - 40);
+
+ctx.font = "18px sans-serif";
+ctx.fillStyle = "#ffd6e0";
+ctx.fillText(
+  deathReason ? `สาเหตุ: ${deathReason}` : "",
+  canvas.width/2,
+  canvas.height/2
+);
+
+ctx.fillStyle = "#fff";
+ctx.font = "16px sans-serif";
+ctx.fillText(
+  "Press Restart to play again",
+  canvas.width/2,
+  canvas.height/2 + 30
+);
+
+ctx.font = "14px sans-serif";
+ctx.fillStyle = "#aaa";
+ctx.fillText(
+  "(หรือคลิกที่หน้าจอ)",
+  canvas.width/2,
+  canvas.height/2 + 50
+);
+
+// ปุ่มแชร์ภาพ Game Over
+ctx.font = "16px sans-serif";
+ctx.fillStyle = "#4CAF50";
+ctx.shadowBlur = 8;
+ctx.shadowColor = "#4CAF50";
+ctx.fillText(
+  "📸 Click here to share this result as image",
+  canvas.width/2,
+  canvas.height/2 + 320
+);
+
+// แสดงสถิติมอนสเตอร์และข้อมูลเกม
+ctx.save();
+
+// === กล่องสถิติหลัก ===
+const boxWidth = 320;
+const boxHeight = 200;
+const boxX = canvas.width/2 - boxWidth/2;
+const boxY = canvas.height/2 + 90; // เลื่อนลงมาเพิ่ม
+
+// พื้นหลังกล่องแบบ gradient
+const boxGradient = ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxHeight);
+boxGradient.addColorStop(0, 'rgba(255,255,255,0.15)');
+boxGradient.addColorStop(1, 'rgba(255,255,255,0.05)');
+ctx.fillStyle = boxGradient;
+ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+// กรอบกล่อง
+ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+ctx.lineWidth = 2;
+ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+// === สถิติแต่ละบรรทัด ===
+const startY = boxY + 30;
+const lineHeight = 28;
+let currentY = startY;
+
+// 🏆 Final Score
+ctx.font = "bold 20px sans-serif";
+ctx.fillStyle = "#FFD700";
+ctx.textAlign = "center";
+ctx.shadowBlur = 10;
+ctx.shadowColor = "#FFD700";
+ctx.fillText(`🏆 Final Score: ${score}`, canvas.width/2, currentY);
+currentY += lineHeight + 5;
+
+// ⏱️ Play Time
+ctx.font = "bold 18px sans-serif";
+ctx.fillStyle = "#90EE90";
+ctx.shadowBlur = 8;
+ctx.shadowColor = "#90EE90";
+ctx.fillText(`⏱️ Play Time: ${formatTime(gamePlayTime)}`, canvas.width/2, currentY);
+currentY += lineHeight;
+
+// 👹 Monsters Killed
+ctx.font = "16px sans-serif";
+ctx.fillStyle = "#FF6B6B";
+ctx.shadowBlur = 6;
+ctx.shadowColor = "#FF6B6B";
+ctx.fillText(`👹 Monsters Killed: ${monstersKilled}`, canvas.width/2, currentY);
+currentY += lineHeight - 2;
+
+// ❄️ Max Kill Combo
+ctx.fillStyle = "#00D4FF";
+ctx.shadowBlur = 6;
+ctx.shadowColor = "#00D4FF";
+ctx.fillText(`❄️ Max Kill Combo: ${maxKillCombo}x`, canvas.width/2, currentY);
+currentY += lineHeight;
+
+// 🔥 Max Food Combo (ถ้ามี)
+if (maxCombo > 0) {
+  ctx.fillStyle = "#FFEB3B";
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = "#FFEB3B";
+  ctx.fillText(`🔥 Max Food Combo: ${maxCombo}x`, canvas.width/2, currentY);
+}
+
+ctx.restore();
+
+}
+  
+function drawMonster(m) {
+  const theme = themes[currentTheme];
+  const cx = m.x * GRID + GRID / 2;
+  const cy = m.y * GRID + GRID / 2;
+  const r = GRID / 2 - 1;
+
+  // ===== ตาขาว =====
+  ctx.shadowBlur = monstersFrozen ? 25 : 20;
+  ctx.shadowColor = monstersFrozen ? theme.freezeItem : theme.monsterPupil;
+  ctx.fillStyle = theme.monsterEye;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // ===== คำนวณทิศทางมอง (มองหัวงู) =====
+  const head = snake[0];
+  const tx = head.x * GRID + GRID / 2;
+  const ty = head.y * GRID + GRID / 2;
+
+  let dx = tx - cx;
+  let dy = ty - cy;
+  const dist = Math.hypot(dx, dy) || 1;
+  dx /= dist;
+  dy /= dist;
+
+  // ระยะขยับรูม่าน
+  const pupilOffset = r * 0.35;
+
+  const px = cx + dx * pupilOffset;
+  const py = cy + dy * pupilOffset;
+
+  // ===== ม่านตา =====
+  ctx.fillStyle = monstersFrozen ? theme.freezeItem : theme.monsterPupil;
+  ctx.beginPath();
+  ctx.arc(px, py, r * 0.45, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ===== รูม่าน =====
+  ctx.fillStyle = "#000";
+  ctx.beginPath();
+  ctx.arc(px, py, r * 0.22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ===== ไฮไลต์แสง =====
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.beginPath();
+  ctx.arc(px - r*0.15, py - r*0.15, r * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+
+function draw(){
+  const theme = themes[currentTheme];
+  
+  // พื้นหลัง
+  ctx.fillStyle = theme.background;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Performance Mode: ลด shadow effects
+  if (!performanceMode) {
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = theme.food;
+  }
+  ctx.fillStyle = theme.food;
+  ctx.beginPath();
+  ctx.arc(food.x*GRID+GRID/2, food.y*GRID+GRID/2, GRID/2-2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  if(freezeItem){
+    if (!performanceMode) {
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = theme.freezeItem;
+    }
+    ctx.fillStyle = theme.freezeItem;
+    ctx.beginPath();
+    ctx.arc(freezeItem.x*GRID+GRID/2, freezeItem.y*GRID+GRID/2, GRID/2-2, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    const cx = freezeItem.x*GRID+GRID/2;
+    const cy = freezeItem.y*GRID+GRID/2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-5); ctx.lineTo(cx, cy+5);
+    ctx.moveTo(cx-5, cy); ctx.lineTo(cx+5, cy);
+    ctx.moveTo(cx-3, cy-3); ctx.lineTo(cx+3, cy+3);
+    ctx.moveTo(cx-3, cy+3); ctx.lineTo(cx+3, cy-3);
+    ctx.stroke();
+  }
+
+  // 👹 วาดมอนสเตอร์
+    monster.forEach(m => drawMonster(m));
+
+  ctx.shadowBlur = 0;
+
+  for (let i = 0; i < snake.length; i++) {
+  const sx = snake[i].x * GRID;
+  const sy = snake[i].y * GRID;
+
+  // สั่นเฉพาะหัวตอนกลัว
+  const shakeX = fearShake && i === 0 ? (Math.random() - 0.5) * 2 : 0;
+  const shakeY = fearShake && i === 0 ? (Math.random() - 0.5) * 2 : 0;
+
+  // ===== ลำตัวงู =====
+  const bodyGrad = ctx.createLinearGradient(sx, sy, sx + GRID, sy + GRID);
+  bodyGrad.addColorStop(0, theme.snakeBody[0]);
+  bodyGrad.addColorStop(1, theme.snakeBody[1]);
+
+  ctx.fillStyle = bodyGrad;
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = theme.snakeBody[1];
+  ctx.fillRect(
+    sx + 2 + shakeX,
+    sy + 2 + shakeY,
+    GRID - 4,
+    GRID - 4
+  );
+  ctx.shadowBlur = 0;
+
+  // ===== หัวงู (หน้าเหวอ) =====
+  if (i === 0) {
+    const cx = sx + GRID / 2 + shakeX;
+    const cy = sy + GRID / 2 + shakeY;
+
+    // ตาขาว
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy - 3, 4, 0, Math.PI * 2);
+    ctx.arc(cx + 4, cy - 3, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // รูม่าน (กลัว = เล็ก)
+    ctx.fillStyle = "#333";
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy - 3, fearShake ? 1.5 : 2.5, 0, Math.PI * 2);
+    ctx.arc(cx + 4, cy - 3, fearShake ? 1.5 : 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ปากตกใจ
+    ctx.strokeStyle = "#555";
+    ctx.beginPath();
+    ctx.arc(cx, cy + 4, 5, 0, Math.PI);
+    ctx.stroke();
+
+    // ⏰ เวลานับถอยหลังตรงหัวงู (เมื่อมอนสเตอร์ถูกแช่แข็ง)
+    if (monstersFrozen) {
+      const timeLeft = (freezeDuration / 10).toFixed(1);
+      ctx.save();
+      ctx.fillStyle = theme.freezeItem;
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = theme.freezeItem;
+      
+      // เอฟเฟกต์กระพริบเล็กน้อย
+      const alpha = 0.8 + 0.2 * Math.sin(Date.now() * 0.015);
+      ctx.globalAlpha = alpha;
+      
+      ctx.fillText(timeLeft + "s", cx, cy - 15);
+      ctx.restore();
+    }
+  }
+}
+
+  ctx.shadowBlur = 0;
+
+  // ❄️ Ice particles (ปิดใน Performance Mode)
+if (!performanceMode) {
+  particles.forEach(p => {
+    ctx.fillStyle = theme.particle;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ✨ Floating score
+floatingTexts.forEach(t => {
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(t.text, t.x, t.y);
+});
+
+// ❄️ Attack Monsters Message (เมื่อมอนสเตอร์ถูกแช่แข็ง)
+if (monstersFrozen) {
+  ctx.save();
+  ctx.fillStyle = theme.freezeItem;
+  ctx.font = "bold 24px sans-serif";
+  ctx.textAlign = "center";
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = theme.freezeItem;
+  
+  // เอฟเฟกต์กระพริบ
+  const alpha = 0.7 + 0.3 * Math.sin(Date.now() * 0.01);
+  ctx.globalAlpha = alpha;
+  
+  ctx.fillText("ATTACK MONSTERS!", canvas.width/2, 40);
+  
+  // เวลานับถอยหลัง
+  const timeLeft = (freezeDuration / 10).toFixed(1); // แสดงทศนิยม 1 ตำแหน่ง
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText(`Time: ${timeLeft}s`, canvas.width/2, 70);
+  
+  ctx.restore();
+}
+
+}
+
+function setDirection(d){
+  if (directionLocked) return; // ❌ กันกดรัว
+
+  if (d === 'up'    && dir.y !== 1)  dir = {x:0,y:-1};
+  if (d === 'down'  && dir.y !== -1) dir = {x:0,y:1};
+  if (d === 'left'  && dir.x !== 1)  dir = {x:-1,y:0};
+  if (d === 'right' && dir.x !== -1) dir = {x:1,y:0};
+
+  directionLocked = true; // 🔒 ล็อกจนกว่าจะ tick ถัดไป
+}
+
+
+window.addEventListener('keydown', (e) => {
+  startBgm(); // เริ่มเพลงเมื่อผู้เล่นกดปุ่มครั้งแรก
+
+  const key = e.key;
+  if (key === 'ArrowUp'    || key === 'w') setDirection('up');
+  if (key === 'ArrowDown'  || key === 's') setDirection('down');
+  if (key === 'ArrowLeft'  || key === 'a') setDirection('left');
+  if (key === 'ArrowRight' || key === 'd') setDirection('right');
+});
+
+touchBtns.forEach(btn => {
+  const d = btn.dataset.dir;
+  const handler = (e) => {
+    e.preventDefault();
+    startBgm();     // เริ่มเพลงเมื่อกดปุ่มจอยสติ๊ก
+    setDirection(d);
+  };
+  btn.addEventListener('click', handler);
+  btn.addEventListener('touchstart', handler, { passive:false });
+});
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  startBgm(); // แตะหน้าจอให้เพลงเริ่ม
+  
+  // ถ้า Game Over แล้ว คลิกเพื่อรีสตาร์ท
+  if (!running) {
+    resetGame();
+    return;
+  }
+  
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  
+  // ถ้า Game Over อยู่ ไม่ต้องทำอะไร (รีสตาร์ทไปแล้วตอน touchstart)
+  if (!running) return;
+  
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (deltaX > 30) setDirection('right');
+    else if (deltaX < -30) setDirection('left');
+  } else {
+    if (deltaY > 30) setDirection('down');
+    else if (deltaY < -30) setDirection('up');
+  }
+});
+
+restartBtn.addEventListener('click', () => {
+  startBgm(); // กดรีสตาร์ทให้เพลงเล่นด้วย
+  resetGame();
+});
+
+// คลิกที่ canvas ตอน Game Over
+canvas.addEventListener('click', (e) => {
+  if (!running) {
+    // คำนวณตำแหน่งคลิก
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // ปรับตามขนาดจริงของ canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clickX = x * scaleX;
+    const clickY = y * scaleY;
+    
+    // ตรวจสอบว่าคลิกที่ปุ่มแชร์ภาพหรือไม่
+    const shareButtonY = canvas.height/2 + 320;
+    if (clickY >= shareButtonY - 15 && clickY <= shareButtonY + 15) {
+      // คลิกที่ปุ่มแชร์ภาพ
+      shareGameOverImage();
+      return;
+    }
+    
+    // คลิกที่อื่น = รีสตาร์ท
+    startBgm();
+    resetGame();
+  }
+});
+
+// ===== แจ้งเตือนเมื่อโดนแซงคะแนน =====
+function showOvertakeAlert() {
+  // ❌ ถ้าเกมกำลังเล่นอยู่ ไม่แจ้ง
+  if (running) return;
+
+  // ❌ แจ้งครบ 3 ครั้งแล้ว
+  if (overtakeAlertCount >= 3) return;
+
+  overtakeAlertCount++;
+
+  // 🔊 เสียงเตือน
+  playBeep(1200, 0.12, "square");
+
+  // 📢 กล่องแจ้งเตือน
+  const alertBox = document.createElement("div");
+  alertBox.style.cssText = `
+    position: fixed;
+    top: ${100 + overtakeAlertCount * 60}px;
+    right: 20px;
+    background: linear-gradient(135deg, #ff512f, #dd2476);
+    color: white;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-weight: bold;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 30000;
+  `;
+
+  alertBox.textContent = "⚠️ มีผู้เล่นแซงคะแนนคุณแล้ว!";
+
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => {
+    alertBox.remove();
+  }, 3000);
+}
+
+resetGame();
+
+setInterval(() => {
+  loadLeaderboard();
+}, 15000); // ทุก 15 วินาที
+
+</script>
+
+<!-- Unlock Theme Modal -->
+<div class="unlock-modal" id="unlockModal">
+  <div class="unlock-modal-content">
+    <h2>🔒 ปลดล็อกธีม</h2>
+    <p id="unlockThemeText"></p>
+
+    <img src="promptpay-qr.png"
+         alt="PromptPay QR"
+         style="width:220px;border-radius:12px;margin:12px 0">
+
+    <p style="font-size:14px;opacity:0.9">
+      โอนเงิน <b>10 บาท</b> ผ่าน PromptPay<br>
+      แล้วกด “แจ้งโอนแล้ว”
+    </p>
+
+    <hr style="margin:20px 0;border:none;border-top:1px solid rgba(255,255,255,0.2)">
+
+    <p style="font-size:13px;opacity:0.85;margin-bottom:8px;">
+      💎 มีโค้ดปลดล็อกแล้ว?
+    </p>
+
+    <input
+      id="adminCodeInput"
+      type="text"
+      placeholder="ใส่โค้ดที่ได้จากแอดมิน"
+      style="
+        width:100%;
+        padding:10px;
+        border-radius:8px;
+        border:none;
+        margin-bottom:10px;
+        font-size:14px;
+        text-align:center;
+        text-transform:uppercase;
+      "
+    >
+
+    <button onclick="unlockWithAdminCode()" style="background:#9C27B0;color:white;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;margin-bottom:10px;">
+      🔓 ปลดล็อกด้วยโค้ด
+    </button>
+
+    <button onclick="notifyPayment()" style="background:#4CAF50;color:white;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;margin-bottom:10px;">
+      📨 แจ้งโอนแล้ว
+    </button>
+    
+    <button onclick="closeUnlockModal()" style="background:#666;color:white;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;">
+      ปิด
+    </button>
+  </div>
+</div>
+
+</body>
+</html>

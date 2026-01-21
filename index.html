@@ -1791,10 +1791,23 @@ async function submitScore() {
       localStorage.setItem("snakePlayerName", name);
     }
 
+    // ส่งข้อมูลครบถ้วน
+    const gameData = {
+      name, 
+      score, 
+      mode: difficulty,
+      playTime: gamePlayTime,           // เวลาเล่น (วินาที)
+      monstersKilled: monstersKilled,   // จำนวนมอนสเตอร์ที่ฆ่า
+      maxKillCombo: maxKillCombo,       // คอมโบการฆ่าสูงสุด
+      maxFoodCombo: maxCombo,           // คอมโบอาหารสูงสุด
+      theme: currentTheme,              // ธีมที่ใช้
+      timestamp: new Date().toISOString()
+    };
+
     await fetch(`${SCORE_API_BASE}/scores`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, score, mode: difficulty }),
+      body: JSON.stringify(gameData),
     });
 
     loadLeaderboard();

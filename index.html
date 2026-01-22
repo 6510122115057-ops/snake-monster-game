@@ -1986,6 +1986,11 @@ let combo = 0;
 let comboTimer = 0;
 let maxCombo = 0;
 
+// ===== ระบบโบนัสอมตะ =====
+let immortalMode = false;
+let immortalDuration = 0;
+let immortalMaxDuration = 600; // 10 วินาที (60 FPS * 10)
+
 // ===== ระบบนับมอนสเตอร์ที่ฆ่า =====
 let monstersKilled = 0;
 let killCombo = 0;
@@ -2270,6 +2275,11 @@ nextMonsterRespawnScore = 100;
 combo = 0;
 comboTimer = 0;
 comboDisplay.style.display = 'none';
+
+// รีเซ็ตโหมดอมตะ
+immortalMode = false;
+immortalDuration = 0;
+
 gameStartTime = Date.now();
 
   // เริ่ม animation loop ถ้ายังไม่ได้เริ่ม
@@ -2499,17 +2509,38 @@ function gameTick(){
 
   updateLogicFPS(); // อัพเดท Logic FPS
 
+  // 🛡️ อัปเดตโหมดอมตะ
+  if (immortalMode) {
+    immortalDuration--;
+    if (immortalDuration <= 0) {
+      immortalMode = false;
+      // เอฟเฟกต์หมดอมตะ
+      playBeep(880, 0.2, "sawtooth");
+      spawnFloatingText(snake[0].x, snake[0].y, "Shield OFF");
+    }
+  }
+
   directionLocked = false; // ✅ ปลดล็อกทุก tick
 
   const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
   head.x = (head.x + COLS) % COLS;
   head.y = (head.y + ROWS) % ROWS;
 
+  // 🛡️ ตรวจชนตัวเอง (ยกเว้นโหมดอมตะ)
   if (snake.some(s => s.x===head.x && s.y===head.y)) {
-  deathReason = "ชนตัวเอง";
-  gameOver();
-  return;
-}
+    console.log('💥 Hit self! Immortal mode:', immortalMode); // Debug log
+    if (!immortalMode) {
+      deathReason = "ชนตัวเอง";
+      gameOver();
+      return;
+    } else {
+      // โหมดอมตะ - แสดงเอฟเฟกต์แต่ไม่ตาย
+      console.log('🛡️ Protected from self collision!'); // Debug log
+      triggerCanvasFlash('freeze-flash', 150);
+      playBeep(1100, 0.1, "triangle");
+      spawnFloatingText(head.x, head.y, "🛡️ PROTECTED!");
+    }
+  }
 
     for (let i = monster.length - 1; i >= 0; i--) {
     if (monster[i].x === head.x && monster[i].y === head.y) {
@@ -2547,9 +2578,19 @@ function gameTick(){
         screenShake();
         playFreezeSound();
         } else {
-        deathReason = "โดนมอนสเตอร์จับได้";
-        gameOver();
-        return;
+        // 🛡️ ตรวจโหมดอมตะ
+        if (!immortalMode) {
+          deathReason = "โดนมอนสเตอร์จับได้";
+          gameOver();
+          return;
+        } else {
+          // โหมดอมตะ - แสดงเอฟเฟกต์แต่ไม่ตาย
+          console.log('🛡️ Protected from monster collision!'); // Debug log
+          triggerCanvasFlash('hit-flash', 200);
+          screenShake();
+          playBeep(1320, 0.15, "triangle");
+          spawnFloatingText(head.x, head.y, "🛡️ IMMORTAL!");
+        }
         }
     }
     }
@@ -2561,9 +2602,19 @@ function gameTick(){
 
         for (let i = 0; i < monster.length; i++) {
     if (monster[i].x === head.x && monster[i].y === head.y) {
-        deathReason = "มอนสเตอร์พุ่งชน";
-        gameOver();
-        return;
+        // 🛡️ ตรวจโหมดอมตะ
+        if (!immortalMode) {
+          deathReason = "มอนสเตอร์พุ่งชน";
+          gameOver();
+          return;
+        } else {
+          // โหมดอมตะ - แสดงเอฟเฟกต์แต่ไม่ตาย
+          console.log('🛡️ Protected from monster rush!'); // Debug log
+          triggerCanvasFlash('hit-flash', 200);
+          screenShake();
+          playBeep(1320, 0.15, "triangle");
+          spawnFloatingText(head.x, head.y, "🛡️ IMMORTAL!");
+        }
     }
   }
 }
@@ -2594,9 +2645,26 @@ function gameTick(){
       spawnFloatingText(head.x, head.y, `+${10 + comboBonus}${comboBonus > 0 ? ' 🔥' : ''}`);
     }
     
-    // Achievements
+    // Achievements และโบนัสอมตะ
     if (combo === 5) unlockAchievement('combo5', 'Combo Master!', 'ทำ Combo 5 ครั้งติดกัน');
-    if (combo === 10) unlockAchievement('combo10', 'Combo God!', 'ทำ Combo 10 ครั้งติดกัน');
+    if (combo === 10) {
+      unlockAchievement('combo10', 'Combo God!', 'ทำ Combo 10 ครั้งติดกัน');
+      
+      // 🛡️ เปิดโหมดอมตะ 10 วินาที
+      immortalMode = true;
+      immortalDuration = immortalMaxDuration;
+      
+      console.log('🛡️ IMMORTAL MODE ACTIVATED!', immortalDuration); // Debug log
+      
+      // เอฟเฟกต์พิเศษ
+      triggerCanvasFlash('eat-flash', 500);
+      playBeep(1320, 0.3, "sine");
+      setTimeout(() => playBeep(1760, 0.3, "sine"), 150);
+      setTimeout(() => playBeep(2200, 0.4, "sine"), 300);
+      
+      // แสดงข้อความโบนัส
+      spawnFloatingText(head.x, head.y, "🛡️ IMMORTAL!");
+    }
     if (score >= 100 && !achievements.score100) unlockAchievement('score100', 'Century!', 'ได้ 100 คะแนน');
     if (score >= 500 && !achievements.score500) unlockAchievement('score500', 'High Scorer!', 'ได้ 500 คะแนน');
     if (score >= 1000 && !achievements.score1000) unlockAchievement('score1000', 'Legend!', 'ได้ 1000 คะแนน');
@@ -3184,6 +3252,29 @@ if (monstersFrozen) {
   const timeLeft = (freezeDuration / 10).toFixed(1); // แสดงทศนิยม 1 ตำแหน่ง
   ctx.font = "bold 20px sans-serif";
   ctx.fillText(`Time: ${timeLeft}s`, canvas.width/2, 70);
+  
+  ctx.restore();
+}
+
+// 🛡️ แสดงสถานะโหมดอมตะ
+if (immortalMode) {
+  ctx.save();
+  ctx.fillStyle = "#FFD700"; // สีทอง
+  ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "center";
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = "#FFD700";
+  
+  // เอฟเฟกต์กระพริบทอง
+  const immortalAlpha = 0.8 + 0.2 * Math.sin(Date.now() * 0.02);
+  ctx.globalAlpha = immortalAlpha;
+  
+  ctx.fillText("🛡️ IMMORTAL MODE", canvas.width/2, 100);
+  
+  // เวลาอมตะที่เหลือ
+  const immortalTimeLeft = (immortalDuration / 60).toFixed(1);
+  ctx.font = "bold 18px sans-serif";
+  ctx.fillText(`Shield: ${immortalTimeLeft}s`, canvas.width/2, 125);
   
   ctx.restore();
 }

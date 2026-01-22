@@ -1008,6 +1008,24 @@
     </button>
   </div>
 
+  <div style="margin-top:12px; font-size:14px;">
+    <b>Weather</b><br>
+    
+    <button id="toggleWeather"
+      style="
+        margin-top:6px;
+        width:100%;
+        padding:6px;
+        border:none;
+        border-radius:6px;
+        background:rgba(255,255,255,0.2);
+        color:#fff;
+        cursor:pointer;
+      ">
+      🌧️ Rain & Thunder: ON
+    </button>
+  </div>
+
 </div>
 
 <canvas id="game" width="600" height="600"></canvas>
@@ -1091,6 +1109,15 @@ const renderFPSEl = document.getElementById('renderFPS');
 const logicFPSEl = document.getElementById('logicFPS');
 const toggleFPSBtn = document.getElementById('toggleFPS');
 const togglePerformanceBtn = document.getElementById('togglePerformance');
+const toggleWeatherBtn = document.getElementById('toggleWeather');
+let weatherEnabled = true;
+
+// Debug: ตรวจสอบว่าเจอปุ่ม Weather หรือไม่
+if (!toggleWeatherBtn) {
+  console.error('❌ ไม่เจอปุ่ม toggleWeather!');
+} else {
+  console.log('✅ เจอปุ่ม toggleWeather แล้ว:', toggleWeatherBtn);
+}
 const shareBtn = document.getElementById('shareBtn');
 const shareModal = document.getElementById('shareModal');
 const closeShareModal = document.getElementById('closeShareModal');
@@ -1117,6 +1144,129 @@ let lastLogicTime = performance.now();
 
 // ===== Performance Mode =====
 let performanceMode = false;
+
+// ===== Weather System - ระบบสภาพอากาศ =====
+let raindrops = [];
+let lightning = { active: false, alpha: 0, timer: 0 };
+let thunderTimer = 0;
+
+// สร้างเม็ดฝน
+function createRain() {
+  for (let i = 0; i < 2; i++) { // เพิ่มเป็น 2 เม็ดต่อเฟรม
+    raindrops.push({
+      x: Math.random() * canvas.width,
+      y: -10,
+      speed: 2 + Math.random() * 3, // เร็วขึ้นเล็กน้อย
+      length: 8 + Math.random() * 12, // ยาวขึ้น
+      opacity: 0.4 + Math.random() * 0.4 // เข้มขึ้น (0.4-0.8)
+    });
+  }
+}
+
+// อัปเดตฝน
+function updateRain() {
+  // ❄️ ถ้ามอนสเตอร์แช่แข็ง ฝนจะหยุดเคลื่อนที่
+  if (!monstersFrozen) {
+    raindrops.forEach(drop => {
+      drop.y += drop.speed;
+    });
+    
+    // ลบเม็ดฝนที่ออกจากหน้าจอ (เฉพาะตอนไม่แช่แข็ง)
+    raindrops = raindrops.filter(drop => drop.y < canvas.height + 20);
+  }
+  // ตอนแช่แข็ง ฝนจะหยุดนิ่งในอากาศ
+}
+
+// วาดฝน - เข้มและชัดขึ้น
+function drawRain() {
+  ctx.strokeStyle = `rgba(173, 216, 230, 0.7)`; // เข้มขึ้น
+  ctx.lineWidth = 1.2; // หนาขึ้น
+  
+  raindrops.forEach(drop => {
+    ctx.globalAlpha = drop.opacity;
+    ctx.beginPath();
+    ctx.moveTo(drop.x, drop.y);
+    ctx.lineTo(drop.x - 3, drop.y - drop.length); // เอียงมากขึ้น
+    ctx.stroke();
+  });
+  
+  ctx.globalAlpha = 1; // รีเซ็ต
+}
+
+// ❄️ วาดฝนแช่แข็ง - หยุดนิ่งและเย็นยะเยือก
+function drawFrozenRain() {
+  ctx.strokeStyle = `rgba(0, 212, 255, 0.8)`; // สีฟ้าน้ำแข็ง
+  ctx.lineWidth = 1.5; // หนาขึ้นเล็กน้อย
+  
+  raindrops.forEach(drop => {
+    ctx.globalAlpha = drop.opacity * 0.9; // เข้มขึ้นเล็กน้อย
+    ctx.beginPath();
+    
+    // ฝนหยุดนิ่ง - ไม่เอียง วาดตรงลง
+    ctx.moveTo(drop.x, drop.y);
+    ctx.lineTo(drop.x, drop.y - drop.length);
+    ctx.stroke();
+    
+    // เพิ่มเอฟเฟกต์คริสตัลน้ำแข็งเล็กๆ
+    ctx.fillStyle = `rgba(0, 212, 255, ${drop.opacity * 0.6})`;
+    ctx.beginPath();
+    ctx.arc(drop.x, drop.y, 1, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  
+  ctx.globalAlpha = 1; // รีเซ็ต
+}
+
+// สร้างฟ้าแลบ - เบาและสวยงาม
+function createLightning() {
+  lightning.active = true;
+  lightning.alpha = 0.3; // จางพอดี
+  lightning.timer = 10;
+  
+  // เสียงฟ้าร้องเบาๆ
+  setTimeout(() => {
+    playThunder();
+  }, 400 + Math.random() * 600);
+}
+
+// อัปเดตฟ้าแลบ
+function updateLightning() {
+  // ❄️ ไม่มีฟ้าแลบตอนแช่แข็ง - ทุกอย่างหยุดนิ่ง
+  if (monstersFrozen) {
+    lightning.active = false; // ปิดฟ้าแลบทันที
+    return;
+  }
+  
+  if (lightning.active) {
+    lightning.timer--;
+    lightning.alpha = Math.max(0, lightning.alpha - 0.06);
+    
+    if (lightning.timer <= 0) {
+      lightning.active = false;
+    }
+  }
+  
+  // สุ่มฟ้าแลบ (ทุก 15-30 วินาที) - เฉพาะตอนไม่แช่แข็ง
+  thunderTimer++;
+  if (thunderTimer > 900 + Math.random() * 900) { // 15-30 วินาที
+    createLightning();
+    thunderTimer = 0;
+  }
+}
+
+// วาดฟ้าแลบ - เบาและสวยงาม
+function drawLightning() {
+  if (lightning.active && lightning.alpha > 0) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${lightning.alpha * 0.2})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// เสียงฟ้าร้องเบาและสั้น
+function playThunder() {
+  playBeep(120, 0.1, "sawtooth");
+  setTimeout(() => playBeep(90, 0.15, "sawtooth"), 80);
+}
 
 // ===== Animation Loop =====
 let animationFrameId = null;
@@ -1545,6 +1695,24 @@ togglePerformanceBtn.addEventListener('click', () => {
   }
 });
 
+// ===== Weather Toggle =====
+toggleWeatherBtn.addEventListener('click', () => {
+  console.log('🌧️ Weather button clicked!'); // Debug log
+  weatherEnabled = !weatherEnabled;
+  console.log('Weather enabled:', weatherEnabled); // Debug log
+  
+  if (weatherEnabled) {
+    toggleWeatherBtn.textContent = '🌧️ Rain & Thunder: ON';
+    toggleWeatherBtn.style.background = 'rgba(255,255,255,0.2)';
+  } else {
+    toggleWeatherBtn.textContent = '🌧️ Rain & Thunder: OFF';
+    toggleWeatherBtn.style.background = 'rgba(158, 158, 158, 0.3)';
+    // ล้างฝนและฟ้าแลบ
+    raindrops = [];
+    lightning.active = false;
+  }
+});
+
 // ===== FPS Calculation =====
 function updateFPS() {
   const currentTime = performance.now();
@@ -1602,6 +1770,19 @@ function animationLoop(currentTime) {
     updateFPS();
     return;
   }
+  
+  // อัปเดตสภาพอากาศ (ถ้าเปิดอยู่)
+  if (weatherEnabled) {
+    // ❄️ ตอนแช่แข็ง ไม่สร้างฝนใหม่ - ให้ฝนเดิมหยุดนิ่ง
+    if (!monstersFrozen) {
+      createRain();
+    }
+    updateRain();
+    updateLightning();
+  }
+  
+  // อัปเดตเอฟเฟกต์ทุกเฟรม (60 FPS)
+  updateEffects();
   
   // วาดเกมทุกเฟรม (60 FPS)
   draw();
@@ -1711,7 +1892,32 @@ function spawnIceExplosion(x, y) {
       y: cy,
       vx: (Math.random() - 0.5) * 6,
       vy: (Math.random() - 0.5) * 6,
-      life: 30
+      life: 30,
+      type: 'ice'
+    });
+  }
+}
+
+function spawnWindEffect(x, y, dirX, dirY, isSnake = true) {
+  const cx = x * GRID + GRID / 2;
+  const cy = y * GRID + GRID / 2;
+
+  // เพิ่มจำนวน particles มากๆ ให้เห็นชัดเจน
+  const particleCount = performanceMode ? 20 : 35;
+  
+  for (let i = 0; i < particleCount; i++) {
+    // สร้างลมไปทิศทางตรงข้ามกับการเคลื่อนที่
+    const windDirX = -dirX + (Math.random() - 0.5) * 1.5;
+    const windDirY = -dirY + (Math.random() - 0.5) * 1.5;
+    
+    particles.push({
+      x: cx + (Math.random() - 0.5) * GRID * 1.2,
+      y: cy + (Math.random() - 0.5) * GRID * 1.2,
+      vx: windDirX * (4 + Math.random() * 4), // ความเร็วสูงมาก
+      vy: windDirY * (4 + Math.random() * 4),
+      life: 40 + Math.random() * 20, // อายุยืนมาก
+      type: isSnake ? 'wind_snake' : 'wind_monster',
+      size: 4 + Math.random() * 6 // ขนาดใหญ่มาก 4-10 pixels
     });
   }
 }
@@ -1729,7 +1935,17 @@ function updateEffects() {
   particles.forEach(p => {
     p.x += p.vx;
     p.y += p.vy;
-    p.vy += 0.2;
+    
+    // แยกประเภท particle
+    if (p.type === 'wind_snake' || p.type === 'wind_monster') {
+      // ลมค่อยๆ ลดความเร็วช้าลง (ให้เห็นนานขึ้น)
+      p.vx *= 0.92;
+      p.vy *= 0.92;
+    } else {
+      // Ice particles (เดิม)
+      p.vy += 0.2;
+    }
+    
     p.life--;
   });
   particles = particles.filter(p => p.life > 0);
@@ -2179,8 +2395,16 @@ function updateHardMonstersByScore() {
 }
 
 function placeFood(){
+  // สุ่มประเภทอาหาร
+  const foodTypes = ['🍗', '🥩', '🍖'];
+  const randomFoodType = foodTypes[Math.floor(Math.random() * foodTypes.length)];
+  
   while(true){
-    const f = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+    const f = { 
+      x: Math.floor(Math.random()*COLS), 
+      y: Math.floor(Math.random()*ROWS),
+      type: randomFoodType // เพิ่มประเภทอาหาร
+    };
     if (!snake.some(s => s.x===f.x && s.y===f.y) &&
         (!freezeItem || (f.x !== freezeItem.x || f.y !== freezeItem.y))) {
       food = f;
@@ -2346,6 +2570,8 @@ function gameTick(){
 
   snake.unshift(head);
 
+  // ลบเอฟเฟกต์ลมตอนเคลื่อนที่ปกติ - เหลือแค่ตอนเปลี่ยนทิศทาง
+
   if (head.x === food.x && head.y === food.y){
     // ===== Combo System =====
     combo++;
@@ -2434,7 +2660,7 @@ function gameTick(){
     if (d < 4) fearShake = 1;
     });
 
-    updateEffects();
+    // updateEffects(); // ย้ายไป animationLoop แล้ว
     // draw(); // ย้ายไปที่ animation loop แล้ว
     // updateFPS(); // ย้ายไปที่ animation loop แล้ว
 }
@@ -2658,15 +2884,40 @@ function draw(){
   ctx.fillStyle = theme.background;
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
+  // 🌧️ วาดบรรยากาศฝนตก หรือ ❄️ บรรยากาศน้ำแข็ง
+  if (weatherEnabled) {
+    if (monstersFrozen) {
+      // ❄️ บรรยากาศน้ำแข็ง - เย็นยะเยือก
+      ctx.fillStyle = 'rgba(173, 216, 230, 0.15)'; // สีฟ้าอ่อนๆ
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      drawFrozenRain(); // ฝนแช่แข็งหยุดนิ่ง
+    } else {
+      // 🌧️ บรรยากาศฝนปกติ
+      ctx.fillStyle = 'rgba(50, 50, 70, 0.25)'; // เข้มขึ้น
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      drawRain();
+    }
+  }
+
+  // วาดอาหาร 🍗🥩🍖
+  const foodX = food.x * GRID + GRID / 2;
+  const foodY = food.y * GRID + GRID / 2;
+  
   // Performance Mode: ลด shadow effects
   if (!performanceMode) {
     ctx.shadowBlur = 15;
     ctx.shadowColor = theme.food;
   }
+  
+  // วาดอาหารแบบสุ่ม
   ctx.fillStyle = theme.food;
-  ctx.beginPath();
-  ctx.arc(food.x*GRID+GRID/2, food.y*GRID+GRID/2, GRID/2-2, 0, Math.PI*2);
-  ctx.fill();
+  ctx.font = `${GRID - 4}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(food.type || '🍗', foodX, foodY); // ใช้ type ที่สุ่มมา หรือ default เป็น 🍗
+  
   ctx.shadowBlur = 0;
 
   if(freezeItem){
@@ -2768,15 +3019,55 @@ function draw(){
 
   ctx.shadowBlur = 0;
 
-  // ❄️ Ice particles (ปิดใน Performance Mode)
-if (!performanceMode) {
-  particles.forEach(p => {
-    ctx.fillStyle = theme.particle;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-    ctx.fill();
+  // 🌪️ Wind Particles Effects - เอฟเฟกต์ลมเล็กๆ จางๆ
+  particles.forEach((p, index) => {
+    if (p.type === 'wind_snake') {
+      // ลมของงู - เอฟเฟกต์เขียวเล็กๆ จางๆ
+      const alpha = Math.min(p.life / 30, 0.4); // จางลงมาก
+      
+      // วงกลมหลัก - เล็กลง
+      ctx.shadowBlur = 6; // เงาเล็กลง
+      ctx.shadowColor = '#4ecdc4';
+      ctx.fillStyle = `rgba(78, 205, 196, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2); // เล็กลง
+      ctx.fill();
+      
+      // จุดสว่างตรงกลาง - เล็กมาก
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `rgba(199, 237, 230, ${alpha * 0.6})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      
+    } else if (p.type === 'wind_monster') {
+      // ลมของมอนสเตอร์ - เอฟเฟกต์แดงเล็กๆ จางๆ
+      const alpha = Math.min(p.life / 30, 0.4);
+      
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = '#ff6b6b';
+      ctx.fillStyle = `rgba(255, 107, 107, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `rgba(255, 182, 193, ${alpha * 0.6})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      
+    } else {
+      // Ice particles (เดิม)
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = theme.particle;
+      ctx.fillStyle = theme.particle;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0; // รีเซ็ต shadow
   });
-}
 
 // ✨ Floating score
 floatingTexts.forEach(t => {
@@ -2809,15 +3100,50 @@ if (monstersFrozen) {
   ctx.restore();
 }
 
+  // ⚡ วาดฟ้าแลบ (บนสุด) - ไม่แสดงตอนแช่แข็ง
+  if (weatherEnabled && !monstersFrozen) {
+    drawLightning();
+  }
+
 }
 
 function setDirection(d){
   if (directionLocked) return; // ❌ กันกดรัว
 
-  if (d === 'up'    && dir.y !== 1)  dir = {x:0,y:-1};
-  if (d === 'down'  && dir.y !== -1) dir = {x:0,y:1};
-  if (d === 'left'  && dir.x !== 1)  dir = {x:-1,y:0};
-  if (d === 'right' && dir.x !== -1) dir = {x:1,y:0};
+  const oldDir = { x: dir.x, y: dir.y }; // เก็บทิศทางเดิม
+  let newDir = null;
+
+  if (d === 'up'    && dir.y !== 1)  newDir = {x:0,y:-1};
+  if (d === 'down'  && dir.y !== -1) newDir = {x:0,y:1};
+  if (d === 'left'  && dir.x !== 1)  newDir = {x:-1,y:0};
+  if (d === 'right' && dir.x !== -1) newDir = {x:1,y:0};
+
+  // ถ้ามีการเปลี่ยนทิศทาง สร้างเอฟเฟกต์ลมเล็กๆ
+  if (newDir && (newDir.x !== oldDir.x || newDir.y !== oldDir.y)) {
+    dir = newDir;
+    
+    // สร้างเอฟเฟกต์ลมเล็กๆ จางๆ
+    if (snake && snake[0]) {
+      const cx = snake[0].x * GRID + GRID / 2;
+      const cy = snake[0].y * GRID + GRID / 2;
+      
+      // เพิ่ม particles เล็กๆ น้อยๆ
+      for (let i = 0; i < 6; i++) {
+        particles.push({
+          x: cx + (Math.random() - 0.5) * 20,
+          y: cy + (Math.random() - 0.5) * 20,
+          vx: -newDir.x * 2 + (Math.random() - 0.5) * 1.5,
+          vy: -newDir.y * 2 + (Math.random() - 0.5) * 1.5,
+          life: 30, // อายุสั้นลง
+          type: 'wind_snake',
+          size: 2 + Math.random() * 3 // ขนาดเล็กลง 2-5 pixels
+        });
+      }
+      
+      // เสียงเปลี่ยนทิศทางเบาๆ
+      playBeep(600, 0.05, "sine");
+    }
+  }
 
   directionLocked = true; // 🔒 ล็อกจนกว่าจะ tick ถัดไป
 }

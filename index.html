@@ -2956,26 +2956,26 @@ function draw(){
   const shakeX = fearShake && i === 0 ? (Math.random() - 0.5) * 2 : 0;
   const shakeY = fearShake && i === 0 ? (Math.random() - 0.5) * 2 : 0;
 
-  // ===== ลำตัวงู =====
-  const bodyGrad = ctx.createLinearGradient(sx, sy, sx + GRID, sy + GRID);
-  bodyGrad.addColorStop(0, theme.snakeBody[0]);
-  bodyGrad.addColorStop(1, theme.snakeBody[1]);
+  const cx = sx + GRID / 2 + shakeX;
+  const cy = sy + GRID / 2 + shakeY;
 
-  ctx.fillStyle = bodyGrad;
-  ctx.shadowBlur = 6;
-  ctx.shadowColor = theme.snakeBody[1];
-  ctx.fillRect(
-    sx + 2 + shakeX,
-    sy + 2 + shakeY,
-    GRID - 4,
-    GRID - 4
-  );
-  ctx.shadowBlur = 0;
-
-  // ===== หัวงู (หน้าเหวอ) =====
   if (i === 0) {
-    const cx = sx + GRID / 2 + shakeX;
-    const cy = sy + GRID / 2 + shakeY;
+    // ===== หัวงู (สี่เหลี่ยมแบบเดิม) =====
+    // หัวงูสี่เหลี่ยม
+    const bodyGrad = ctx.createLinearGradient(sx, sy, sx + GRID, sy + GRID);
+    bodyGrad.addColorStop(0, theme.snakeBody[0]);
+    bodyGrad.addColorStop(1, theme.snakeBody[1]);
+
+    ctx.fillStyle = bodyGrad;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = theme.snakeBody[1];
+    ctx.fillRect(
+      sx + 2 + shakeX,
+      sy + 2 + shakeY,
+      GRID - 4,
+      GRID - 4
+    );
+    ctx.shadowBlur = 0;
 
     // ตาขาว
     ctx.fillStyle = "#fff";
@@ -3014,6 +3014,94 @@ function draw(){
       ctx.fillText(timeLeft + "s", cx, cy - 15);
       ctx.restore();
     }
+    
+  } else {
+    // ===== ลำตัวงูที่ค่อยๆ เล็กลงจากหัวไปหาง =====
+    const isLastSegment = (i === snake.length - 1); // ส่วนท้าย = หาง
+    
+    // คำนวณขนาดตามตำแหน่ง - ใกล้หัวใหญ่ ใกล้หางเล็ก
+    const maxSize = GRID / 2 - 1; // ขนาดใหญ่สุด (ใกล้หัว)
+    const minSize = GRID / 4;     // ขนาดเล็กสุด (หาง)
+    
+    let bodySize;
+    if (isLastSegment) {
+      // หาง - เล็กที่สุด
+      bodySize = minSize;
+    } else {
+      // ลำตัว - ค่อยๆ เล็กลงตามตำแหน่ง
+      const sizeRatio = (snake.length - i - 1) / (snake.length - 1); // 1 = ใกล้หัว, 0 = ใกล้หาง
+      bodySize = minSize + (maxSize - minSize) * sizeRatio;
+    }
+    
+    // เงาลำตัว/หาง
+    ctx.shadowBlur = isLastSegment ? 2 : Math.max(2, bodySize / 3);
+    ctx.shadowColor = theme.snakeBody[1];
+    
+    if (isLastSegment) {
+      // ===== หางแหลม =====
+      // คำนวณทิศทางของหาง (ดูจากส่วนก่อนหน้า)
+      let tailDirX = 0, tailDirY = 0;
+      if (snake.length > 1) {
+        const prevSegment = snake[i - 1];
+        tailDirX = snake[i].x - prevSegment.x;
+        tailDirY = snake[i].y - prevSegment.y;
+      }
+      
+      // วาดหางแหลม
+      const tailGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, bodySize);
+      tailGrad.addColorStop(0, theme.snakeBody[0]);
+      tailGrad.addColorStop(1, theme.snakeBody[1]);
+      
+      ctx.fillStyle = tailGrad;
+      ctx.beginPath();
+      
+      // หางรูปหยดน้ำ/แหลม
+      if (tailDirX !== 0 || tailDirY !== 0) {
+        // หางแหลมไปทางทิศทางที่ถูกต้อง
+        const tipX = cx + tailDirX * (GRID / 4);
+        const tipY = cy + tailDirY * (GRID / 4);
+        
+        // วาดรูปหยดน้ำ
+        ctx.ellipse(cx - tailDirX * 2, cy - tailDirY * 2, bodySize, bodySize * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // ปลายแหลม
+        ctx.beginPath();
+        ctx.moveTo(cx + tailDirX * 2, cy + tailDirY * 2);
+        ctx.lineTo(tipX, tipY);
+        ctx.lineTo(cx + tailDirX * 1 + tailDirY * 3, cy + tailDirY * 1 + tailDirX * 3);
+        ctx.lineTo(cx + tailDirX * 1 - tailDirY * 3, cy + tailDirY * 1 - tailDirX * 3);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // หางปกติถ้าไม่มีทิศทาง
+        ctx.arc(cx, cy, bodySize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+    } else {
+      // ===== ลำตัวปกติ (ขนาดค่อยๆ เล็กลง) =====
+      const bodyGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, bodySize);
+      bodyGrad.addColorStop(0, theme.snakeBody[0]);
+      bodyGrad.addColorStop(1, theme.snakeBody[1]);
+      
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, bodySize, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // ลายเกล็ดลำตัว (เฉพาะส่วนที่ใหญ่พอ)
+      if (bodySize > GRID / 3) {
+        ctx.fillStyle = theme.snakeBody[1];
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(1, bodySize - 3), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+    
+    ctx.shadowBlur = 0;
   }
 }
 

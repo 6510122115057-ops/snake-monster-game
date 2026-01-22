@@ -2708,7 +2708,7 @@ ctx.fillText(
 ctx.fillStyle = "#fff";
 ctx.font = "16px sans-serif";
 ctx.fillText(
-  "Press Restart to play again",
+  "Press Restart or SPACEBAR to play again",
   canvas.width/2,
   canvas.height/2 + 30
 );
@@ -3241,10 +3241,18 @@ window.addEventListener('keydown', (e) => {
   startBgm(); // เริ่มเพลงเมื่อผู้เล่นกดปุ่มครั้งแรก
 
   const key = e.key;
+  
+  // ปุ่มเคลื่อนที่
   if (key === 'ArrowUp'    || key === 'w') setDirection('up');
   if (key === 'ArrowDown'  || key === 's') setDirection('down');
   if (key === 'ArrowLeft'  || key === 'a') setDirection('left');
   if (key === 'ArrowRight' || key === 'd') setDirection('right');
+  
+  // กด Spacebar เพื่อเริ่มเกมใหม่
+  if (key === ' ' || key === 'Spacebar') {
+    e.preventDefault(); // ป้องกัน scroll หน้าเว็บ
+    resetGame();
+  }
 });
 
 touchBtns.forEach(btn => {

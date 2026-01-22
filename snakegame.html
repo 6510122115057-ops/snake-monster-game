@@ -1730,7 +1730,32 @@
         y: cy,
         vx: (Math.random() - 0.5) * 6,
         vy: (Math.random() - 0.5) * 6,
-        life: 30
+        life: 30,
+        type: 'ice'
+      });
+    }
+  }
+
+  function spawnWindEffect(x, y, dirX, dirY, isSnake = true) {
+    const cx = x * GRID + GRID / 2;
+    const cy = y * GRID + GRID / 2;
+
+    // เพิ่มจำนวน particles ให้เห็นชัดขึ้น
+    const particleCount = performanceMode ? 12 : 20;
+    
+    for (let i = 0; i < particleCount; i++) {
+      // สร้างลมไปทิศทางตรงข้ามกับการเคลื่อนที่
+      const windDirX = -dirX + (Math.random() - 0.5) * 1.2;
+      const windDirY = -dirY + (Math.random() - 0.5) * 1.2;
+      
+      particles.push({
+        x: cx + (Math.random() - 0.5) * GRID * 0.8,
+        y: cy + (Math.random() - 0.5) * GRID * 0.8,
+        vx: windDirX * (3 + Math.random() * 3), // เพิ่มความเร็ว
+        vy: windDirY * (3 + Math.random() * 3),
+        life: 25 + Math.random() * 15, // อายุยืนขึ้น
+        type: isSnake ? 'wind_snake' : 'wind_monster',
+        size: 2 + Math.random() * 4 // ขนาดใหญ่ขึ้น 2-6 pixels
       });
     }
   }

@@ -1093,7 +1093,7 @@
   const comboCount = document.getElementById('comboCount');
   const streakDisplay = document.getElementById('streakCount');
   const uiPanel = document.getElementById('uiPanel');
-  const uiToggle = document.getElementById('globalMenuBtn');
+  let uiToggle = document.getElementById('globalMenuBtn');
   
   // 🔍 Debug: ตรวจสอบว่าเจอปุ่มหรือไม่
   if (!uiToggle) {
@@ -1919,7 +1919,7 @@
   const difficultySettings = {
     easy:   { snakeSpeed: 100, monsterMoveInterval: 4, monsterCount: 1 },
     normal: { snakeSpeed: 80,  monsterMoveInterval: 3, monsterCount: 1 },
-    hard:   { snakeSpeed: 70,  monsterMoveInterval: 2, monsterCount: 2 }
+    hard:   { snakeSpeed: 70,  monsterMoveInterval: 3, monsterCount: 2 }
   };
 
   // เริ่มเพลงหลัง user มี interaction
@@ -2612,7 +2612,16 @@
   }
     
   function drawMonster(m) {
-    const theme = themes[currentTheme];
+    // 🛡️ ป้องกัน error ถ้า theme ไม่พร้อม
+    const theme = themes[currentTheme] || themes.default || {
+      background: "#1a1a2e",
+      snakeBody: ["#c7ede6", "#9fd3c7"],
+      food: "#ff6b6b",
+      freezeItem: "#00d4ff",
+      monsterEye: "#ffffff",
+      monsterPupil: "#ff4d6d",
+      particle: "rgba(0,212,255,0.9)"
+    };
     const cx = m.x * GRID + GRID / 2;
     const cy = m.y * GRID + GRID / 2;
     const r = GRID / 2 - 1;
@@ -2664,7 +2673,16 @@
 
 
   function draw(){
-    const theme = themes[currentTheme];
+    // 🛡️ ป้องกัน error ถ้า theme ไม่พร้อม
+    const theme = themes[currentTheme] || themes.default || {
+      background: "#1a1a2e",
+      snakeBody: ["#c7ede6", "#9fd3c7"],
+      food: "#ff6b6b",
+      freezeItem: "#00d4ff",
+      monsterEye: "#ffffff",
+      monsterPupil: "#ff4d6d",
+      particle: "rgba(0,212,255,0.9)"
+    };
     
     // พื้นหลัง
     ctx.fillStyle = theme.background;
